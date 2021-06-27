@@ -287,7 +287,7 @@ input, select, textarea {
 			justify-content: flex-end;
 		}
 
-		.row.aln-top {
+		.row.aln-about {
 			align-items: flex-start;
 		}
 
@@ -530,7 +530,7 @@ input, select, textarea {
 					justify-content: flex-end;
 				}
 
-				.row.aln-top {
+				.row.aln-about {
 					align-items: flex-start;
 				}
 
@@ -775,7 +775,7 @@ input, select, textarea {
 					justify-content: flex-end;
 				}
 
-				.row.aln-top {
+				.row.aln-about{
 					align-items: flex-start;
 				}
 
@@ -1020,7 +1020,7 @@ input, select, textarea {
 					justify-content: flex-end;
 				}
 
-				.row.aln-top {
+				.row.aln-about {
 					align-items: flex-start;
 				}
 
@@ -1265,7 +1265,7 @@ input, select, textarea {
 					justify-content: flex-end;
 				}
 
-				.row.aln-top {
+				.row.aln-about {
 					align-items: flex-start;
 				}
 
@@ -1510,7 +1510,7 @@ input, select, textarea {
 					justify-content: flex-end;
 				}
 
-				.row.aln-top {
+				.row.aln-about {
 					align-items: flex-start;
 				}
 
@@ -2057,7 +2057,7 @@ input, select, textarea {
 		width: 375px;
 	}
 
-		#header .top {
+		#header .about {
 			-moz-flex-grow: 1;
 			-webkit-flex-grow: 1;
 			-ms-flex-grow: 1;
