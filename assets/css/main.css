@@ -111,7 +111,7 @@ input, select, textarea {
 	}
 
 	h1, h2, h3, h4, h5, h6 {
-		font-weight: 200;
+		font-weight: 300;
 		color: #666;
 		line-height: 1.5em;
 	}
@@ -2103,7 +2103,7 @@ input, select, textarea {
 		#logo h1 {
 			position: relative;
 			color: #fff;
-			font-weight: 200;
+			font-weight: 300;
 			font-size: 1em;
 			line-height: 1em;
 		}
