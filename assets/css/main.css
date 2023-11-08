@@ -216,12 +216,20 @@ input, select, textarea {
 		margin: 0 auto;
 		max-width: 100%;
 		width: 1400px;
+		text-align: justify;
+		text-justify: inter-word;
+		-moz-text-align-last: center;
+		text-align-last: center;
 	}
 
 		@media screen and (min-width: 961px) and (max-width: 1880px) {
 
 			.container {
 				width: 1200px;
+				text-align: justify;
+				text-justify: inter-word;
+				-moz-text-align-last: center;
+				text-align-last: center;
 			}
 
 		}
@@ -230,6 +238,10 @@ input, select, textarea {
 
 			.container {
 				width: 960px;
+				text-align: justify;
+				text-justify: inter-word;
+				-moz-text-align-last: center;
+				text-align-last: center;
 			}
 
 		}
@@ -238,6 +250,10 @@ input, select, textarea {
 
 			.container {
 				width: 100%;
+				text-align: justify;
+				text-justify: inter-word;
+				-moz-text-align-last: center;
+				text-align-last: center;
 			}
 
 		}
@@ -246,6 +262,10 @@ input, select, textarea {
 
 			.container {
 				width: 100%;
+				text-align: justify;
+				text-justify: inter-word;
+				-moz-text-align-last: center;
+				text-align-last: center;
 			}
 
 		}
@@ -254,6 +274,10 @@ input, select, textarea {
 
 			.container {
 				width: 100%;
+				text-align: justify;
+				text-justify: inter-word;
+				-moz-text-align-last: center;
+				text-align-last: center;
 			}
 
 		}
