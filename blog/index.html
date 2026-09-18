@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Interactive research essays by Bonaventure F. P. Dossou on active learning, uncertainty quantification, adaptive evaluation, and resource-aware AI." />
+  <meta property="og:title" content="Research Notes | Bonaventure F. P. Dossou" />
+  <meta property="og:description" content="Interactive essays about active learning, uncertainty, compute, annotation costs, and language model evaluation." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://bonaventuredossou.github.io/blog/index.html" />
+  <title>Research Notes | Bonaventure F. P. Dossou</title>
+  <link rel="canonical" href="https://bonaventuredossou.github.io/blog/index.html" />
+  <link rel="icon" href="../images/bd.ico" />
+  <link rel="stylesheet" href="assets/blog.css" />
+</head>
+<body class="blog-home">
+  <header class="site-header">
+    <a class="site-brand" href="../index.html" aria-label="Bonaventure F. P. Dossou home">
+      <span class="brand-mark">BD</span>
+      <span>Bonaventure F. P. Dossou</span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="../index.html#top">About</a>
+      <a href="../index.html#research">Research</a>
+      <a href="../index.html#education">Education</a>
+      <a href="../index.html#experience">Experience</a>
+      <a href="../index.html#publications">Publications</a>
+      <a href="../index.html#recognition">Awards</a>
+      <a href="../index.html#skills">Skills</a>
+      <a class="active" href="index.html">Blog</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="blog-index-hero">
+      <div class="eyebrow">Research notes and interactive essays</div>
+      <h1>Ideas are easier to test<br />when you can <em>touch them.</em></h1>
+      <p>I write visual, technically grounded explanations of the questions behind my research: how models learn from limited data, reason about uncertainty, and make efficient decisions when labels and compute both have a cost.</p>
+      <div class="hero-profile-links" aria-label="Research profiles and contact links">
+        <a href="https://drive.google.com/file/d/1u5lIMtfhSRMw1jvQ0zglF7io_jNyk9qr/view?usp=sharing">CV</a>
+        <a href="https://scholar.google.com/citations?user=2J581k0AAAAJ&amp;hl=en">Google Scholar</a>
+        <a href="https://github.com/bonaventuredossou">GitHub</a>
+        <a href="https://www.linkedin.com/in/bonaventuredossou/">LinkedIn</a>
+      </div>
+    </section>
+
+    <section class="series-section" aria-labelledby="active-learning-series">
+      <div class="series-heading">
+        <div>
+          <div class="eyebrow">Series 01</div>
+          <h2 id="active-learning-series">Active learning under real constraints</h2>
+        </div>
+        <p>How should we update? What should we pay for? What should we optimize?</p>
+      </div>
+
+      <div class="post-grid">
+        <article class="post-card featured">
+          <a class="post-card-art" href="active-learning-and-compute/index.html" aria-label="Read Active Learning Saves Labels. But What About Compute?">
+            <span class="art-label">Interactive</span>
+            <span class="orbit orbit-one"></span>
+            <span class="orbit orbit-two"></span>
+            <span class="art-node n1"></span>
+            <span class="art-node n2"></span>
+            <span class="art-node n3"></span>
+            <span class="art-node n4"></span>
+            <span class="art-node n5"></span>
+            <span class="art-boundary"></span>
+          </a>
+          <div class="post-card-body">
+            <div class="post-number">01</div>
+            <div class="post-kicker">Active learning, Bayesian uncertainty, efficient finetuning</div>
+            <h3><a href="active-learning-and-compute/index.html">Active Learning Saves Labels. But What About Compute?</a></h3>
+            <p>Start with why active learning asks for particular examples. Then trace uncertainty through MC Dropout to a hidden cost in the loop: repeatedly finetuning on everything acquired so far.</p>
+            <div class="post-footer">
+              <span>18 min read</span>
+              <a href="active-learning-and-compute/index.html">Explore the essay <span aria-hidden="true">&rarr;</span></a>
+            </div>
+          </div>
+        </article>
+
+        <article class="post-card upcoming">
+          <div class="post-card-body">
+            <div class="post-number">02</div>
+            <div class="post-kicker">Cost-aware acquisition</div>
+            <h3><a href="active-learning-with-non-uniform-costs/index.html">What If Labels Do Not Cost the Same?</a></h3>
+            <p>From uniform annotation budgets to KnapsackBALD: selecting a globally useful batch when every example carries its own annotation cost.</p>
+            <div class="post-footer">
+              <span>Essay page</span>
+              <a href="active-learning-with-non-uniform-costs/index.html">View article <span aria-hidden="true">&rarr;</span></a>
+            </div>
+          </div>
+        </article>
+
+        <article class="post-card upcoming">
+          <div class="post-card-body">
+            <div class="post-number">03</div>
+            <div class="post-kicker">Ranking-aligned active evaluation</div>
+            <h3><a href="rankbald-active-evaluation/index.html">Are We Acquiring Information for the Right Goal?</a></h3>
+            <p>Why estimating model ability and confidently ranking models are different objectives, and how RankBALD aligns acquisition with the decision we actually care about.</p>
+            <div class="post-footer">
+              <span>Essay page</span>
+              <a href="rankbald-active-evaluation/index.html">View article <span aria-hidden="true">&rarr;</span></a>
+            </div>
+          </div>
+        </article>
+
+        <article class="post-card upcoming">
+          <div class="post-card-body">
+            <div class="post-number">04</div>
+            <div class="post-kicker">Active learning in practice</div>
+            <h3><a href="active-learning-in-the-real-world/index.html">Where Does Active Learning Matter in Real Life?</a></h3>
+            <p>See how cost-aware acquisition, efficient model updating, and decision-aligned evaluation can support clinical trials, finance, drug discovery, and public services.</p>
+            <div class="post-footer">
+              <span>Interactive essay</span>
+              <a href="active-learning-in-the-real-world/index.html">Explore applications <span aria-hidden="true">&rarr;</span></a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="blog-footer">
+    <span>&copy; Bonaventure F. P. Dossou</span>
+    <div class="footer-links">
+      <a href="https://scholar.google.com/citations?user=2J581k0AAAAJ&amp;hl=en">Google Scholar</a>
+      <a href="https://www.semanticscholar.org/author/Bonaventure-F.-P.-Dossou/1591111757">Semantic Scholar</a>
+      <a href="https://github.com/bonaventuredossou">GitHub</a>
+      <a href="https://www.linkedin.com/in/bonaventuredossou/">LinkedIn</a>
+      <a href="mailto:bonaventure.dossou@mila.quebec">Email</a>
+    </div>
+  </footer>
+</body>
+</html>

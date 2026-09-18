@@ -1,0 +1,1287 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="An interactive essay on how active learning, cost-aware acquisition, efficient updating, and ranking-aligned evaluation apply to clinical trials, finance, drug discovery, and public services." />
+  <meta property="og:title" content="Where Does Active Learning Matter in the Real World?" />
+  <meta property="og:description" content="Explore how uncertainty, cost, compute, and decision impact shape data acquisition in high-stakes real-world systems." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://bonaventuredossou.github.io/blog/active-learning-in-the-real-world/index.html" />
+  <title>Where Does Active Learning Matter in the Real World? | Bonaventure F. P. Dossou</title>
+  <link rel="canonical" href="https://bonaventuredossou.github.io/blog/active-learning-in-the-real-world/index.html" />
+  <link rel="icon" href="../../images/bd.ico" />
+  <link rel="stylesheet" href="../assets/blog.css" />
+  <script defer src="../assets/blog.js"></script>
+
+  <style>
+    .practice-map {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .practice-hero {
+      background:
+        linear-gradient(rgba(17, 124, 114, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(17, 124, 114, 0.05) 1px, transparent 1px),
+        radial-gradient(circle at 78% 34%, rgba(240, 185, 74, 0.2), transparent 28%),
+        linear-gradient(180deg, #f4f8f1, #fbfcf8);
+      background-size: 48px 48px, 48px 48px, auto, auto;
+    }
+
+    .practice-orbit {
+      aspect-ratio: 1;
+      max-width: 470px;
+      position: relative;
+      width: 100%;
+    }
+
+    .practice-orbit::before {
+      background: radial-gradient(circle, rgba(35, 174, 152, 0.17), transparent 68%);
+      content: "";
+      inset: -10%;
+      position: absolute;
+    }
+
+    .practice-ring {
+      border: 1px solid rgba(16, 40, 50, 0.17);
+      border-radius: 50%;
+      left: 50%;
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .practice-ring.outer {
+      height: 92%;
+      width: 92%;
+    }
+
+    .practice-ring.middle {
+      height: 66%;
+      width: 66%;
+    }
+
+    .practice-ring.inner {
+      height: 36%;
+      width: 36%;
+    }
+
+    .domain-node {
+      align-items: center;
+      background: #ffffff;
+      border: 2px solid currentColor;
+      border-radius: 50%;
+      box-shadow: 0 8px 24px rgba(16, 40, 50, 0.12);
+      color: var(--teal);
+      display: flex;
+      font-size: 0.68rem;
+      font-weight: 800;
+      height: 76px;
+      justify-content: center;
+      line-height: 1.15;
+      padding: 0.45rem;
+      position: absolute;
+      text-align: center;
+      width: 76px;
+      z-index: 2;
+    }
+
+    .domain-node.clinical {
+      left: 8%;
+      top: 28%;
+    }
+
+    .domain-node.finance {
+      right: 7%;
+      top: 22%;
+    }
+
+    .domain-node.science {
+      bottom: 8%;
+      left: 24%;
+    }
+
+    .domain-node.public {
+      bottom: 13%;
+      right: 19%;
+    }
+
+    .orbit-question {
+      align-items: center;
+      background: var(--ink);
+      border: 5px solid #f7faf5;
+      border-radius: 50%;
+      color: #ffffff;
+      display: flex;
+      font-family: var(--serif);
+      font-size: 2rem;
+      height: 98px;
+      justify-content: center;
+      left: 50%;
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 98px;
+      z-index: 3;
+    }
+
+    .domain-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin: 2.5rem 0;
+    }
+
+    .domain-card {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1.35rem;
+    }
+
+    .domain-card span {
+      color: var(--teal);
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.45rem;
+      text-transform: uppercase;
+    }
+
+    .domain-card h3 {
+      font-family: var(--sans);
+      font-size: 1.12rem;
+      font-weight: 800;
+      margin: 0 0 0.7rem;
+    }
+
+    .domain-card p {
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    .practice-lab {
+      background: var(--ink);
+      border-radius: 22px;
+      color: #ffffff;
+      margin: 3rem -11rem;
+      overflow: hidden;
+    }
+
+    .lab-header {
+      align-items: flex-start;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+      display: flex;
+      gap: 2rem;
+      justify-content: space-between;
+      padding: 1.6rem;
+    }
+
+    .lab-header h3 {
+      color: #ffffff;
+      font-family: var(--sans);
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin: 0 0 0.35rem;
+    }
+
+    .lab-header p {
+      color: rgba(255, 255, 255, 0.68);
+      font-family: var(--sans);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      margin: 0;
+      max-width: 680px;
+    }
+
+    .live-badge {
+      background: var(--coral);
+      border-radius: 999px;
+      color: #ffffff;
+      flex: 0 0 auto;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      padding: 0.48rem 0.72rem;
+      text-transform: uppercase;
+    }
+
+    .lab-control-zone {
+      background: rgba(255, 255, 255, 0.035);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+      display: grid;
+      gap: 1.25rem;
+      grid-template-columns: 1.25fr 1.25fr 0.8fr;
+      padding: 1.4rem 1.6rem;
+    }
+
+    .control-group > span,
+    .budget-control label {
+      color: rgba(255, 255, 255, 0.58);
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.55rem;
+      text-transform: uppercase;
+    }
+
+    .domain-switch,
+    .strategy-switch,
+    .compute-switch {
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .domain-switch {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .strategy-switch {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .compute-switch {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 0.8rem;
+    }
+
+    .lab-option {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.17);
+      border-radius: 8px;
+      color: rgba(255, 255, 255, 0.78);
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.7rem;
+      font-weight: 750;
+      min-height: 40px;
+      padding: 0.55rem 0.65rem;
+    }
+
+    .lab-option.active {
+      background: #ffffff;
+      border-color: #ffffff;
+      color: var(--ink);
+    }
+
+    .budget-line {
+      align-items: center;
+      display: flex;
+      gap: 0.7rem;
+    }
+
+    .budget-line input {
+      width: 100%;
+    }
+
+    .budget-line output {
+      background: rgba(255, 255, 255, 0.09);
+      border-radius: 7px;
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 800;
+      min-width: 58px;
+      padding: 0.45rem;
+      text-align: center;
+    }
+
+    .scenario-banner {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+      padding: 1rem 1.6rem;
+    }
+
+    .scenario-banner strong {
+      color: #ffffff;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .scenario-banner p {
+      color: rgba(255, 255, 255, 0.65);
+      font-family: var(--sans);
+      font-size: 0.76rem;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .candidate-header,
+    .candidate-row {
+      align-items: center;
+      display: grid;
+      gap: 0.8rem;
+      grid-template-columns: minmax(170px, 1.25fr) 76px 90px 90px minmax(130px, 1fr);
+    }
+
+    .candidate-header {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      padding: 1rem 1.6rem 0.45rem;
+      text-transform: uppercase;
+    }
+
+    .candidate-list {
+      padding: 0 1.6rem 1rem;
+    }
+
+    .candidate-row {
+      border-top: 1px solid rgba(255, 255, 255, 0.09);
+      min-height: 62px;
+      padding: 0.65rem 0;
+    }
+
+    .candidate-row.selected {
+      background: rgba(35, 174, 152, 0.1);
+      box-shadow: -1.6rem 0 rgba(35, 174, 152, 0.1), 1.6rem 0 rgba(35, 174, 152, 0.1);
+    }
+
+    .candidate-name strong,
+    .candidate-name span {
+      display: block;
+    }
+
+    .candidate-name strong {
+      font-size: 0.82rem;
+    }
+
+    .candidate-name span {
+      color: rgba(255, 255, 255, 0.53);
+      font-size: 0.66rem;
+      margin-top: 0.2rem;
+    }
+
+    .candidate-number {
+      font-size: 0.74rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .score-track {
+      background: rgba(255, 255, 255, 0.09);
+      border-radius: 999px;
+      height: 10px;
+      overflow: hidden;
+    }
+
+    .score-fill {
+      background: var(--gold);
+      border-radius: inherit;
+      height: 100%;
+      transition: width 180ms ease;
+    }
+
+    .candidate-row.selected .score-fill {
+      background: var(--teal-bright);
+    }
+
+    .selection-summary {
+      background: rgba(255, 255, 255, 0.055);
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .selection-summary div {
+      border-top: 1px solid rgba(255, 255, 255, 0.13);
+      padding: 1rem 1.6rem;
+    }
+
+    .selection-summary span {
+      color: rgba(255, 255, 255, 0.55);
+      display: block;
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      margin-bottom: 0.3rem;
+      text-transform: uppercase;
+    }
+
+    .selection-summary strong {
+      color: #ffffff;
+      font-family: var(--serif);
+      font-size: 1.22rem;
+    }
+
+    .lab-explanation {
+      color: rgba(255, 255, 255, 0.7);
+      font-family: var(--sans);
+      font-size: 0.78rem;
+      line-height: 1.55;
+      margin: 0;
+      padding: 1rem 1.6rem 1.3rem;
+    }
+
+    .three-ideas {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin: 2.5rem -4rem;
+    }
+
+    .idea-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1.4rem;
+    }
+
+    .idea-card span {
+      color: var(--teal);
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.45rem;
+      text-transform: uppercase;
+    }
+
+    .idea-card h3 {
+      font-family: var(--sans);
+      font-size: 1.02rem;
+      font-weight: 800;
+      margin: 0 0 0.7rem;
+    }
+
+    .idea-card p {
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 0.78rem;
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    .workflow {
+      display: grid;
+      gap: 0.7rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin: 2.5rem -5rem;
+    }
+
+    .workflow article {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      min-height: 150px;
+      padding: 1.2rem;
+    }
+
+    .workflow b {
+      color: var(--teal);
+      display: block;
+      font-family: var(--serif);
+      font-size: 1.6rem;
+      margin-bottom: 0.45rem;
+    }
+
+    .workflow strong {
+      display: block;
+      font-size: 0.82rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .workflow small {
+      color: var(--muted);
+      display: block;
+      font-size: 0.7rem;
+      line-height: 1.45;
+    }
+
+    .risk-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin: 2.5rem 0;
+    }
+
+    .risk-card {
+      background: #fff7f2;
+      border: 1px solid rgba(216, 111, 94, 0.22);
+      border-radius: 14px;
+      padding: 1.25rem;
+    }
+
+    .risk-card strong {
+      display: block;
+      margin-bottom: 0.45rem;
+    }
+
+    .risk-card p {
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 0.78rem;
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    .paper-links {
+      display: grid;
+      gap: 0.8rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 2rem;
+    }
+
+    .paper-link {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--ink);
+      padding: 1rem;
+      text-decoration: none;
+    }
+
+    .paper-link span {
+      color: var(--teal);
+      display: block;
+      font-size: 0.66rem;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      margin-bottom: 0.35rem;
+      text-transform: uppercase;
+    }
+
+    .paper-link strong {
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 980px) {
+      .practice-map {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .lab-control-zone,
+      .three-ideas {
+        grid-template-columns: 1fr;
+      }
+
+      .practice-lab {
+        margin-left: -3rem;
+        margin-right: -3rem;
+      }
+
+      .workflow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-left: 0;
+        margin-right: 0;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .practice-map,
+      .domain-grid,
+      .selection-summary,
+      .risk-grid,
+      .paper-links,
+      .workflow {
+        grid-template-columns: 1fr;
+      }
+
+      .practice-orbit {
+        margin: 1rem auto 0;
+        max-width: 340px;
+      }
+
+      .domain-node {
+        font-size: 0.58rem;
+        height: 60px;
+        width: 60px;
+      }
+
+      .orbit-question {
+        font-size: 1.5rem;
+        height: 76px;
+        width: 76px;
+      }
+
+      .practice-lab {
+        border-radius: 14px;
+        margin-left: 0;
+        margin-right: 0;
+      }
+
+      .lab-header {
+        display: block;
+      }
+
+      .live-badge {
+        display: inline-block;
+        margin-top: 1rem;
+      }
+
+      .candidate-header {
+        display: none;
+      }
+
+      .candidate-list {
+        padding-top: 0.6rem;
+      }
+
+      .candidate-row {
+        align-items: start;
+        grid-template-columns: minmax(0, 1fr) 62px 70px;
+      }
+
+      .candidate-row .candidate-number.impact {
+        display: none;
+      }
+
+      .candidate-row .score-track {
+        grid-column: 1 / -1;
+      }
+
+      .three-ideas {
+        margin-left: 0;
+        margin-right: 0;
+      }
+    }
+  </style>
+</head>
+
+<body class="article-page">
+  <div class="reading-progress" aria-hidden="true">
+    <span id="reading-progress-bar"></span>
+  </div>
+
+  <header class="site-header article-header">
+    <a class="site-brand" href="../../index.html#top" aria-label="Bonaventure F. P. Dossou home">
+      <span class="brand-mark">BD</span>
+      <span>Bonaventure F. P. Dossou</span>
+    </a>
+
+    <nav aria-label="Primary navigation">
+      <a href="../../index.html#top">About</a>
+      <a href="../../index.html#research">Research</a>
+      <a href="../../index.html#education">Education</a>
+      <a href="../../index.html#experience">Experience</a>
+      <a href="../../index.html#publications">Publications</a>
+      <a href="../../index.html#recognition">Awards</a>
+      <a href="../../index.html#skills">Skills</a>
+      <a class="active" href="../index.html">Blog</a>
+    </nav>
+  </header>
+
+  <main>
+    <article>
+      <header class="article-hero practice-hero">
+        <div class="article-hero-grid">
+          <div class="article-hero-copy">
+            <a class="series-link" href="../index.html">
+              Active Learning Under Real Constraints <span>04 / 04</span>
+            </a>
+
+            <h1>Where Does Active Learning<br /><em>Matter in Real Life?</em></h1>
+
+            <p class="dek">
+              Clinical trials, fraud investigations, drug discovery, and public
+              services all face the same practical question: when data is costly,
+              which evidence should we acquire next?
+            </p>
+
+            <div class="byline">
+              <span>By <strong>Bonaventure F. P. Dossou</strong></span>
+              <span>Real-world applications</span>
+              <span>Interactive essay</span>
+            </div>
+
+            <div class="hero-actions">
+              <a class="primary-link" href="index.html#decision-lab">Try the decision lab <span aria-hidden="true">&darr;</span></a>
+              <a href="../index.html">All essays</a>
+            </div>
+          </div>
+
+          <div class="practice-orbit" aria-hidden="true">
+            <div class="practice-ring outer"></div>
+            <div class="practice-ring middle"></div>
+            <div class="practice-ring inner"></div>
+            <span class="domain-node clinical">Clinical trials</span>
+            <span class="domain-node finance">Finance</span>
+            <span class="domain-node science">Drug discovery</span>
+            <span class="domain-node public">Public services</span>
+            <span class="orbit-question">Next?</span>
+          </div>
+        </div>
+      </header>
+
+      <aside class="article-map practice-map" aria-label="Article map">
+        <a href="index.html#real-problem"><span>01</span>The real problem</a>
+        <a href="index.html#domains"><span>02</span>Four domains</a>
+        <a href="index.html#decision-lab"><span>03</span>Decision lab</a>
+        <a href="index.html#system"><span>04</span>One system</a>
+        <a href="index.html#guardrails"><span>05</span>Guardrails</a>
+      </aside>
+
+      <div class="article-body">
+        <section id="real-problem">
+          <div class="section-marker">01: The real problem</div>
+          <h2>Real systems do not have a single budget.</h2>
+
+          <p class="lead">
+            A useful learning system must manage at least four scarce resources:
+            labels, money, compute, and decision confidence.
+          </p>
+
+          <p>
+            In a clean benchmark, every unlabeled example looks interchangeable.
+            In practice, one label may require a specialist, another may arrive
+            only after weeks, and a third may be cheap but nearly useless. Updating
+            the model can also be expensive, and the final goal may not be raw
+            accuracy. The decision may be which treatment, risk model, or language
+            system should be trusted.
+          </p>
+
+          <div class="contrast-quote">
+            <p>
+              The valuable question is not simply, "Which example is uncertain?"
+              It is, "Which affordable batch can change the decision, and how
+              should the system learn from it?"
+            </p>
+          </div>
+
+          <div class="workflow">
+            <article>
+              <b>1</b>
+              <strong>Define the decision</strong>
+              <small>Diagnosis, ranking, approval, investigation, or resource allocation.</small>
+            </article>
+            <article>
+              <b>2</b>
+              <strong>Measure uncertainty</strong>
+              <small>Identify what the current model does not know well enough.</small>
+            </article>
+            <article>
+              <b>3</b>
+              <strong>Respect real costs</strong>
+              <small>Account for money, time, expertise, delay, and operational burden.</small>
+            </article>
+            <article>
+              <b>4</b>
+              <strong>Update efficiently</strong>
+              <small>Learn from the new batch without repeating avoidable computation.</small>
+            </article>
+          </div>
+        </section>
+
+        <section id="domains">
+          <div class="section-marker">02: Four domains</div>
+          <h2>The mathematics stays similar. The meaning of a label changes.</h2>
+
+          <div class="domain-grid">
+            <article class="domain-card">
+              <span>Clinical trials</span>
+              <h3>Which evidence should receive scarce clinical review?</h3>
+              <p>
+                A label may require physician adjudication, laboratory tests,
+                longitudinal follow-up, or a specialist safety review. Acquisition
+                should balance uncertainty with patient burden, subgroup coverage,
+                and the chance that evidence changes a treatment decision.
+              </p>
+            </article>
+
+            <article class="domain-card">
+              <span>Finance</span>
+              <h3>Which cases deserve analyst investigation?</h3>
+              <p>
+                Fraud alerts, compliance reviews, and credit-risk investigations
+                have unequal costs. A useful batch should contain cases that are
+                informative, affordable to investigate, and relevant to the
+                decision boundary that drives action.
+              </p>
+            </article>
+
+            <article class="domain-card">
+              <span>Drug discovery</span>
+              <h3>Which compounds should be synthesized or tested?</h3>
+              <p>
+                Candidate experiments vary in price, duration, toxicity risk,
+                and scientific value. Cost-aware acquisition can choose a
+                portfolio of experiments instead of greedily selecting the most
+                uncertain molecule.
+              </p>
+            </article>
+
+            <article class="domain-card">
+              <span>Public services</span>
+              <h3>Which language or case should receive expert attention?</h3>
+              <p>
+                Translation, speech, and administrative systems must allocate
+                limited expert capacity across languages and communities. The
+                cheapest labels may not serve the people with the greatest need,
+                so coverage and fairness belong inside the acquisition policy.
+              </p>
+            </article>
+          </div>
+
+          <div class="definition-card">
+            <span class="definition-label">Important boundary</span>
+            <p>
+              Active learning proposes what evidence to review. It does not replace
+              clinicians, investigators, scientists, regulators, or affected
+              communities. In high-stakes settings, acquisition is decision support,
+              not autonomous authority.
+            </p>
+          </div>
+        </section>
+
+        <section id="decision-lab">
+          <div class="section-marker">03: Interactive decision lab</div>
+          <h2>Build a batch under a real budget.</h2>
+
+          <p>
+            Choose a domain, an acquisition strategy, a budget, and an update
+            mode. Every strategy sees the same candidates. The selected batch
+            changes because each strategy values uncertainty, cost, and decision
+            impact differently.
+          </p>
+
+          <div class="practice-lab">
+            <div class="lab-header">
+              <div>
+                <h3>Real-world acquisition simulator</h3>
+                <p>
+                  Scores are transparent teaching proxies. They illustrate the
+                  trade-offs rather than reproduce a deployed clinical or
+                  financial decision system.
+                </p>
+              </div>
+              <span class="live-badge">Interactive</span>
+            </div>
+
+            <div class="lab-control-zone">
+              <div class="control-group">
+                <span>Application domain</span>
+                <div class="domain-switch">
+                  <button class="lab-option active" type="button" data-domain="clinical">Clinical trials</button>
+                  <button class="lab-option" type="button" data-domain="finance">Finance</button>
+                  <button class="lab-option" type="button" data-domain="science">Drug discovery</button>
+                  <button class="lab-option" type="button" data-domain="public">Public services</button>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <span>Acquisition objective</span>
+                <div class="strategy-switch">
+                  <button class="lab-option" type="button" data-strategy="random">Random</button>
+                  <button class="lab-option" type="button" data-strategy="uncertainty">Uncertainty</button>
+                  <button class="lab-option active" type="button" data-strategy="cost">Cost-aware</button>
+                  <button class="lab-option" type="button" data-strategy="ranking">Decision-aware</button>
+                </div>
+              </div>
+
+              <div class="budget-control">
+                <label for="practice-budget">Available budget</label>
+                <div class="budget-line">
+                  <input id="practice-budget" type="range" min="30" max="120" step="5" value="70" />
+                  <output id="practice-budget-value" for="practice-budget">70</output>
+                </div>
+
+                <div class="compute-switch" aria-label="Model update mode">
+                  <button class="lab-option active" type="button" data-update="continual">Continual update</button>
+                  <button class="lab-option" type="button" data-update="full">Full retraining</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="scenario-banner">
+              <strong id="scenario-title">Clinical-trial evidence review</strong>
+              <p id="scenario-description"></p>
+            </div>
+
+            <div class="candidate-header" aria-hidden="true">
+              <span>Candidate</span>
+              <span>Cost</span>
+              <span>Uncertainty</span>
+              <span>Impact</span>
+              <span>Acquisition score</span>
+            </div>
+
+            <div class="candidate-list" id="practice-candidates" aria-live="polite"></div>
+
+            <div class="selection-summary" aria-live="polite">
+              <div>
+                <span>Batch selected</span>
+                <strong id="selected-count">0 items</strong>
+              </div>
+              <div>
+                <span>Budget used</span>
+                <strong id="selected-cost">0 / 70</strong>
+              </div>
+              <div>
+                <span>Decision value</span>
+                <strong id="selected-impact">0%</strong>
+              </div>
+              <div>
+                <span>Relative update compute</span>
+                <strong id="selected-compute">0 units</strong>
+              </div>
+            </div>
+
+            <p class="lab-explanation" id="practice-explanation"></p>
+          </div>
+        </section>
+
+        <section id="system">
+          <div class="section-marker">04: One practical system</div>
+          <h2>The three research ideas solve different parts of the same workflow.</h2>
+
+          <div class="three-ideas">
+            <article class="idea-card">
+              <span>Compute</span>
+              <h3>Update without restarting everything</h3>
+              <p>
+                Continual finetuning uses the newly acquired batch to make the
+                next update cheaper. This matters when a hospital, bank, or
+                laboratory must repeat the loop many times.
+              </p>
+            </article>
+
+            <article class="idea-card">
+              <span>Annotation cost</span>
+              <h3>Select a batch, not an isolated example</h3>
+              <p>
+                Non-uniform-cost acquisition treats labeling as a constrained
+                portfolio problem. The system can combine several affordable,
+                informative cases instead of spending the budget on one costly
+                example.
+              </p>
+            </article>
+
+            <article class="idea-card">
+              <span>Decision alignment</span>
+              <h3>Acquire evidence for the final comparison</h3>
+              <p>
+                Ranking-aware evaluation asks whether new evidence can resolve
+                the ordering that matters, such as which model, treatment, or
+                policy should be preferred.
+              </p>
+            </article>
+          </div>
+
+          <h3>A clinical-trial example</h3>
+          <p>
+            Imagine a team evaluating several patient-risk models used to
+            prioritize follow-up. Physician review is expensive, certain cases
+            require specialist adjudication, and two models are nearly tied. A
+            practical loop can identify uncertain records, select a cost-feasible
+            batch with adequate subgroup coverage, update the models efficiently,
+            and target evidence that can resolve the close ranking.
+          </p>
+
+          <h3>A financial investigation example</h3>
+          <p>
+            Consider a fraud team with thousands of alerts and a limited number
+            of analyst hours. Uncertainty sampling finds ambiguous transactions.
+            Cost-aware selection accounts for investigation time and documentation
+            requirements. Decision-aware acquisition emphasizes cases that help
+            distinguish competing detection systems near the operating threshold.
+            Continual updating keeps the learning loop computationally feasible.
+          </p>
+        </section>
+
+        <section id="guardrails">
+          <div class="section-marker">05: Guardrails</div>
+          <h2>Efficiency is useful only when the acquisition process is trustworthy.</h2>
+
+          <div class="risk-grid">
+            <article class="risk-card">
+              <strong>Selection bias</strong>
+              <p>
+                The labeled set is chosen by the current model. Without correction,
+                evaluation can become overly optimistic and blind to regions the
+                acquisition rule rarely visits.
+              </p>
+            </article>
+
+            <article class="risk-card">
+              <strong>Unequal access and representation</strong>
+              <p>
+                A purely cost-efficient strategy may repeatedly favor easy-to-reach
+                groups. Coverage, equity, and subgroup performance need explicit
+                constraints.
+              </p>
+            </article>
+
+            <article class="risk-card">
+              <strong>Noisy or delayed outcomes</strong>
+              <p>
+                Clinical outcomes, fraud confirmation, and laboratory results can
+                arrive late or remain ambiguous. The system must represent label
+                uncertainty rather than treat every answer as perfect.
+              </p>
+            </article>
+
+            <article class="risk-card">
+              <strong>Changing environments</strong>
+              <p>
+                Disease patterns, adversarial behavior, markets, and language use
+                all shift. Acquisition policies need monitoring, recalibration,
+                and a safe fallback when the posterior is no longer reliable.
+              </p>
+            </article>
+          </div>
+
+          <div class="caveat-card">
+            <span>The practical takeaway</span>
+            <p>
+              Active learning is most useful when the organization can state the
+              decision, measure the cost of evidence, audit who is represented,
+              and verify that new labels actually improve the outcome that matters.
+            </p>
+          </div>
+
+          <h3>Continue with the technical essays</h3>
+          <div class="paper-links">
+            <a class="paper-link" href="../active-learning-and-compute/index.html">
+              <span>Essay 01</span>
+              <strong>Active Learning Saves Labels. But What About Compute?</strong>
+            </a>
+            <a class="paper-link" href="../active-learning-with-non-uniform-costs/index.html">
+              <span>Essay 02</span>
+              <strong>What If Labels Do Not Cost the Same?</strong>
+            </a>
+            <a class="paper-link" href="../rankbald-active-evaluation/index.html">
+              <span>Essay 03</span>
+              <strong>Are We Acquiring Information for the Right Goal?</strong>
+            </a>
+          </div>
+        </section>
+      </div>
+    </article>
+  </main>
+
+  <footer class="blog-footer">
+    <span>&copy; Bonaventure F. P. Dossou</span>
+    <div class="footer-links">
+      <a href="../index.html">All essays</a>
+      <a href="../../index.html#publications">Publications</a>
+      <a href="https://scholar.google.com/citations?user=2J581k0AAAAJ&amp;hl=en">Google Scholar</a>
+      <a href="https://github.com/bonaventuredossou">GitHub</a>
+      <a href="mailto:bonaventure.dossou@mila.quebec">Email</a>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var byId = function (id) {
+        return document.getElementById(id);
+      };
+
+      var domainData = {
+        clinical: {
+          title: "Clinical-trial evidence review",
+          description: "Select patient records for expert adjudication. Cost represents review burden. Impact represents the chance that the evidence changes treatment or model comparison.",
+          unit: "review units",
+          items: [
+            { name: "Rare adverse event", detail: "Specialist safety adjudication", cost: 34, uncertainty: 0.92, impact: 0.98 },
+            { name: "Borderline treatment response", detail: "Longitudinal physician review", cost: 22, uncertainty: 0.88, impact: 0.91 },
+            { name: "Common stable response", detail: "Routine chart confirmation", cost: 8, uncertainty: 0.35, impact: 0.28 },
+            { name: "Underrepresented subgroup", detail: "Specialist and equity review", cost: 25, uncertainty: 0.73, impact: 0.94 },
+            { name: "Missing laboratory endpoint", detail: "Additional laboratory work", cost: 30, uncertainty: 0.81, impact: 0.72 },
+            { name: "Protocol deviation", detail: "Coordinator adjudication", cost: 14, uncertainty: 0.66, impact: 0.58 },
+            { name: "Near decision threshold", detail: "Outcome committee review", cost: 18, uncertainty: 0.95, impact: 0.96 },
+            { name: "Duplicate measurement", detail: "Low-burden verification", cost: 5, uncertainty: 0.22, impact: 0.16 }
+          ]
+        },
+        finance: {
+          title: "Financial investigation queue",
+          description: "Select alerts for analyst investigation. Cost represents analyst time and documentation. Impact measures relevance to an operating threshold or model comparison.",
+          unit: "analyst hours",
+          items: [
+            { name: "Cross-border transfer network", detail: "Multi-account investigation", cost: 31, uncertainty: 0.86, impact: 0.96 },
+            { name: "Merchant chargeback cluster", detail: "Evidence bundle available", cost: 14, uncertainty: 0.82, impact: 0.78 },
+            { name: "Known fraud signature", detail: "High confidence pattern", cost: 8, uncertainty: 0.18, impact: 0.44 },
+            { name: "New customer anomaly", detail: "Limited transaction history", cost: 18, uncertainty: 0.94, impact: 0.88 },
+            { name: "Corporate account exception", detail: "Senior compliance review", cost: 29, uncertainty: 0.71, impact: 0.92 },
+            { name: "Small recurring transfers", detail: "Batch analyst review", cost: 9, uncertainty: 0.63, impact: 0.51 },
+            { name: "Threshold-adjacent alert", detail: "Competing models disagree", cost: 16, uncertainty: 0.91, impact: 0.99 },
+            { name: "Previously cleared pattern", detail: "Fast verification", cost: 6, uncertainty: 0.27, impact: 0.20 }
+          ]
+        },
+        science: {
+          title: "Drug-discovery experiment portfolio",
+          description: "Select compounds for synthesis and assay. Cost combines material, laboratory, and time requirements. Impact represents value for the scientific decision.",
+          unit: "lab units",
+          items: [
+            { name: "Novel scaffold A", detail: "Complex synthesis", cost: 37, uncertainty: 0.94, impact: 0.95 },
+            { name: "Analogue series B", detail: "Shared synthesis route", cost: 17, uncertainty: 0.76, impact: 0.72 },
+            { name: "Known active control", detail: "Routine assay", cost: 7, uncertainty: 0.16, impact: 0.32 },
+            { name: "Toxicity boundary candidate", detail: "Extended safety assay", cost: 28, uncertainty: 0.87, impact: 0.98 },
+            { name: "Solubility outlier", detail: "Formulation study", cost: 24, uncertainty: 0.82, impact: 0.68 },
+            { name: "Replicate of promising hit", detail: "Confirmation assay", cost: 12, uncertainty: 0.58, impact: 0.77 },
+            { name: "Two-model disagreement", detail: "Ranking-critical assay", cost: 20, uncertainty: 0.91, impact: 0.99 },
+            { name: "Low-novelty analogue", detail: "Simple synthesis", cost: 6, uncertainty: 0.31, impact: 0.21 }
+          ]
+        },
+        public: {
+          title: "Multilingual public-service review",
+          description: "Select language cases for expert annotation. Cost reflects language expertise and review time. Impact includes service quality and population need.",
+          unit: "expert hours",
+          items: [
+            { name: "Emergency message in Fon", detail: "Specialist translation review", cost: 27, uncertainty: 0.89, impact: 0.99 },
+            { name: "Benefits form in French", detail: "Routine quality check", cost: 8, uncertainty: 0.29, impact: 0.46 },
+            { name: "Speech request in Goun", detail: "Limited transcribed data", cost: 24, uncertainty: 0.93, impact: 0.94 },
+            { name: "Common English inquiry", detail: "High-resource template", cost: 5, uncertainty: 0.17, impact: 0.24 },
+            { name: "Immigration terminology", detail: "Legal and language review", cost: 32, uncertainty: 0.78, impact: 0.97 },
+            { name: "Regional accent sample", detail: "Native-speaker validation", cost: 15, uncertainty: 0.81, impact: 0.71 },
+            { name: "Two-system disagreement", detail: "Ranking-critical translation", cost: 18, uncertainty: 0.92, impact: 0.98 },
+            { name: "Repeated template", detail: "Fast confirmation", cost: 4, uncertainty: 0.21, impact: 0.18 }
+          ]
+        }
+      };
+
+      var activeDomain = "clinical";
+      var activeStrategy = "cost";
+      var activeUpdate = "continual";
+
+      function clamp(value, minimum, maximum) {
+        return Math.min(maximum, Math.max(minimum, value));
+      }
+
+      function candidateScore(item, index) {
+        var affordability = 1 - clamp((item.cost - 4) / 34, 0, 1);
+        var deterministicRandom = (Math.sin((index + 1) * 12.9898 + activeDomain.length * 4.17) + 1) / 2;
+
+        if (activeStrategy === "random") {
+          return deterministicRandom;
+        }
+
+        if (activeStrategy === "uncertainty") {
+          return item.uncertainty;
+        }
+
+        if (activeStrategy === "ranking") {
+          return 0.25 * item.uncertainty + 0.65 * item.impact + 0.10 * affordability;
+        }
+
+        return 0.48 * item.uncertainty + 0.27 * item.impact + 0.25 * affordability;
+      }
+
+      function selectBatch(items, budget) {
+        var ranked = items.map(function (item, index) {
+          var score = candidateScore(item, index);
+          var selectionValue = activeStrategy === "cost" ? score / Math.sqrt(item.cost) : score;
+          return { item: item, index: index, score: score, selectionValue: selectionValue };
+        }).sort(function (first, second) {
+          return second.selectionValue - first.selectionValue;
+        });
+
+        var selected = [];
+        var used = 0;
+
+        ranked.forEach(function (candidate) {
+          if (used + candidate.item.cost <= budget) {
+            selected.push(candidate.index);
+            used += candidate.item.cost;
+          }
+        });
+
+        return { selected: selected, used: used };
+      }
+
+      function strategyExplanation() {
+        if (activeStrategy === "random") {
+          return "Random selection creates a neutral baseline, but it can spend scarce budget on cases that are already easy or have little decision impact.";
+        }
+        if (activeStrategy === "uncertainty") {
+          return "Uncertainty sampling prioritizes ambiguous cases. It ignores unequal review costs and does not ask whether resolving the case changes the final decision.";
+        }
+        if (activeStrategy === "ranking") {
+          return "Decision-aware selection emphasizes cases that can resolve consequential comparisons. It may accept a higher cost when the evidence can change which option is preferred.";
+        }
+        return "Cost-aware selection balances uncertainty, decision impact, and affordability. It builds a useful batch under the budget instead of choosing one item at a time.";
+      }
+
+      function renderLab() {
+        var scenario = domainData[activeDomain];
+        var budget = Number(byId("practice-budget").value);
+        var selection = selectBatch(scenario.items, budget);
+        var root = byId("practice-candidates");
+        var scores = scenario.items.map(candidateScore);
+        var maximumScore = Math.max.apply(null, scores.concat([0.0001]));
+        var totalImpact = 0;
+        var totalUncertainty = 0;
+
+        root.textContent = "";
+
+        scenario.items.forEach(function (item, index) {
+          var isSelected = selection.selected.indexOf(index) !== -1;
+          var row = document.createElement("div");
+          row.className = "candidate-row" + (isSelected ? " selected" : "");
+
+          if (isSelected) {
+            totalImpact += item.impact;
+            totalUncertainty += item.uncertainty;
+          }
+
+          row.innerHTML =
+            '<div class="candidate-name"><strong>' + item.name + '</strong><span>' + item.detail + '</span></div>' +
+            '<div class="candidate-number">' + item.cost + '</div>' +
+            '<div class="candidate-number">' + Math.round(item.uncertainty * 100) + '%</div>' +
+            '<div class="candidate-number impact">' + Math.round(item.impact * 100) + '%</div>' +
+            '<div class="score-track" aria-label="Normalized acquisition score"><div class="score-fill" style="width:' + Math.max(4, scores[index] / maximumScore * 100).toFixed(1) + '%"></div></div>';
+          root.appendChild(row);
+        });
+
+        var selectedCount = selection.selected.length;
+        var averageImpact = selectedCount ? totalImpact / selectedCount : 0;
+        var averageUncertainty = selectedCount ? totalUncertainty / selectedCount : 0;
+        var compute = activeUpdate === "continual"
+          ? selectedCount * 9
+          : selectedCount * 9 + 52;
+
+        byId("scenario-title").textContent = scenario.title;
+        byId("scenario-description").textContent = scenario.description;
+        byId("practice-budget-value").textContent = String(budget);
+        byId("selected-count").textContent = selectedCount + (selectedCount === 1 ? " item" : " items");
+        byId("selected-cost").textContent = selection.used + " / " + budget;
+        byId("selected-impact").textContent = Math.round(averageImpact * 100) + "%";
+        byId("selected-compute").textContent = compute + " units";
+        byId("practice-explanation").textContent =
+          strategyExplanation() + " The selected batch has average uncertainty " +
+          Math.round(averageUncertainty * 100) + "%. " +
+          (activeUpdate === "continual"
+            ? "Continual updating trains on the newly acquired batch."
+            : "Full retraining returns to the original checkpoint and uses all accumulated labels.");
+
+        document.querySelectorAll("[data-domain]").forEach(function (button) {
+          button.classList.toggle("active", button.dataset.domain === activeDomain);
+        });
+        document.querySelectorAll("[data-strategy]").forEach(function (button) {
+          button.classList.toggle("active", button.dataset.strategy === activeStrategy);
+        });
+        document.querySelectorAll("[data-update]").forEach(function (button) {
+          button.classList.toggle("active", button.dataset.update === activeUpdate);
+        });
+      }
+
+      document.querySelectorAll("[data-domain]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          activeDomain = button.dataset.domain;
+          renderLab();
+        });
+      });
+
+      document.querySelectorAll("[data-strategy]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          activeStrategy = button.dataset.strategy;
+          renderLab();
+        });
+      });
+
+      document.querySelectorAll("[data-update]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          activeUpdate = button.dataset.update;
+          renderLab();
+        });
+      });
+
+      byId("practice-budget").addEventListener("input", renderLab);
+      renderLab();
+    }());
+  </script>
+</body>
+</html>

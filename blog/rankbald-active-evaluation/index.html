@@ -1,0 +1,3653 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="An interactive essay on RankBALD and ranking-aligned active evaluation for language models." />
+  <meta property="og:title" content="Are We Acquiring Information for the Right Goal?" />
+  <meta property="og:description" content="Explore how RankBALD selects evaluation items that resolve uncertainty about model rankings." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://bonaventuredossou.github.io/blog/rankbald-active-evaluation/index.html" />
+  <title>Are We Acquiring Information for the Right Goal? | Bonaventure F. P. Dossou</title>
+  <link rel="canonical" href="https://bonaventuredossou.github.io/blog/rankbald-active-evaluation/index.html" />
+  <link rel="icon" href="../../images/bd.ico" />
+  <link rel="stylesheet" href="../assets/blog.css" />
+
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [["\\(", "\\)"]],
+        displayMath: [["\\[", "\\]"]]
+      },
+      options: {
+        skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"]
+      }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    .hero-orbit .point {
+      align-items: center;
+      box-sizing: border-box;
+      color: #ffffff;
+      display: flex;
+      font-size: 0.9rem;
+      font-weight: 800;
+      height: 34px;
+      justify-content: center;
+      line-height: 1;
+      width: 34px;
+    }
+
+    .hero-orbit .point.p7 {
+      font-size: 1.05rem;
+      height: 44px;
+      width: 44px;
+    }
+
+    .reading-progress {
+      background: rgba(16, 40, 50, 0.1);
+      height: 4px;
+      left: 0;
+      position: fixed;
+      right: 0;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .reading-progress span {
+      background: var(--coral, #d86f5e);
+      display: block;
+      height: 100%;
+      width: 0;
+    }
+
+    .rank-grid,
+    .paper-stat-grid,
+    .method-grid,
+    .metric-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .rank-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin: 2rem 0;
+    }
+
+    .rank-card,
+    .paper-stat,
+    .method-card {
+      background: #f7f4ed;
+      border: 1px solid rgba(16, 40, 50, 0.12);
+      border-radius: 14px;
+      padding: 1.2rem;
+    }
+
+    .rank-card strong,
+    .paper-stat strong,
+    .method-card strong {
+      color: #102832;
+      display: block;
+      font-size: 1.05rem;
+      margin-bottom: 0.45rem;
+    }
+
+    .formula-card {
+      background: #eef1ed;
+      border-left: 4px solid #397d79;
+      margin: 2rem 0;
+      padding: 1.25rem;
+    }
+
+    .math-block {
+      background: #ffffff;
+      border: 1px solid rgba(16, 40, 50, 0.1);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .math-block + .math-block {
+      margin-top: 1rem;
+    }
+
+    .math-block > span {
+      color: #52646a;
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.55rem;
+      text-transform: uppercase;
+    }
+
+    .math-display {
+      color: #102832;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(0.95rem, 2.25vw, 1.28rem);
+      line-height: 1.7;
+      overflow-x: auto;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .math-explanation {
+      color: #52646a;
+      font-size: 0.9rem;
+      margin: 0.5rem 0 0;
+    }
+
+    .interactive-shell {
+      border: 1px solid rgba(16, 40, 50, 0.14);
+      border-radius: 18px;
+      margin: 2.25rem 0;
+      overflow: hidden;
+    }
+
+    .interactive-head {
+      align-items: flex-start;
+      background: #f7f4ed;
+      border-bottom: 1px solid rgba(16, 40, 50, 0.12);
+      display: flex;
+      gap: 1.5rem;
+      justify-content: space-between;
+      padding: 1.4rem;
+    }
+
+    .interactive-head h3,
+    .interactive-head p {
+      margin: 0;
+    }
+
+    .interactive-head p {
+      color: #52646a;
+      margin-top: 0.4rem;
+      max-width: 680px;
+    }
+
+    .live-badge {
+      background: #d86f5e;
+      border-radius: 999px;
+      color: #ffffff;
+      flex: 0 0 auto;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      padding: 0.45rem 0.72rem;
+      text-transform: uppercase;
+    }
+
+    .rank-controls,
+    .irt-controls {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      padding: 1.25rem;
+    }
+
+    .control label {
+      color: #52646a;
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.45rem;
+      text-transform: uppercase;
+    }
+
+    .control-line {
+      align-items: center;
+      display: flex;
+      gap: 0.7rem;
+    }
+
+    .control-line input {
+      width: 100%;
+    }
+
+    .control-line output {
+      background: #eef1ed;
+      border-radius: 7px;
+      color: #102832;
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      min-width: 3.5rem;
+      padding: 0.4rem 0.55rem;
+      text-align: center;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      padding: 0 1.25rem 1.25rem;
+    }
+
+    .action-button {
+      background: #102832;
+      border: 1px solid #102832;
+      border-radius: 8px;
+      color: #ffffff;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 750;
+      min-height: 44px;
+      padding: 0.7rem 1rem;
+    }
+
+    .action-button.secondary {
+      background: transparent;
+      color: #102832;
+    }
+
+    .action-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    .posterior-board {
+      background: #102832;
+      color: #ffffff;
+      padding: 1.4rem;
+    }
+
+    .posterior-axis {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.24);
+      height: 118px;
+      margin: 0.5rem 0 1rem;
+      position: relative;
+    }
+
+    .posterior-axis::before,
+    .posterior-axis::after {
+      bottom: -1.55rem;
+      color: rgba(255, 255, 255, 0.58);
+      font-size: 0.72rem;
+      position: absolute;
+    }
+
+    .posterior-axis::before {
+      content: "lower ability";
+      left: 0;
+    }
+
+    .posterior-axis::after {
+      content: "higher ability";
+      right: 0;
+    }
+
+    .posterior-band {
+      border-radius: 999px;
+      height: 26px;
+      left: 0;
+      min-width: 10px;
+      position: absolute;
+      transition: left 180ms ease, width 180ms ease;
+    }
+
+    .posterior-band::after {
+      background: #ffffff;
+      border-radius: 50%;
+      content: "";
+      height: 10px;
+      left: 50%;
+      position: absolute;
+      top: 8px;
+      transform: translateX(-50%);
+      width: 10px;
+    }
+
+    .posterior-band.a {
+      background: rgba(216, 111, 94, 0.72);
+      top: 22px;
+    }
+
+    .posterior-band.b {
+      background: rgba(118, 166, 204, 0.72);
+      top: 68px;
+    }
+
+    .posterior-label {
+      font-size: 0.73rem;
+      font-weight: 800;
+      left: 0;
+      position: absolute;
+      top: -1.25rem;
+      white-space: nowrap;
+    }
+
+    .posterior-summary {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 2.2rem;
+    }
+
+    .posterior-summary div {
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 0.9rem;
+    }
+
+    .posterior-summary span {
+      color: rgba(255, 255, 255, 0.62);
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+    }
+
+    .posterior-summary strong {
+      font-size: 1.05rem;
+    }
+
+    .irt-chart-wrap {
+      background: #102832;
+      color: #ffffff;
+      padding: 1.25rem;
+    }
+
+    .irt-chart {
+      display: block;
+      height: auto;
+      width: 100%;
+    }
+
+    .irt-chart text {
+      fill: rgba(255, 255, 255, 0.7);
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+    }
+
+    .irt-summary {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      padding: 1.25rem;
+    }
+
+    .irt-summary div {
+      background: #f7f4ed;
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .irt-summary span {
+      color: #52646a;
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .irt-summary strong {
+      color: #102832;
+      display: block;
+      font-size: 1.2rem;
+      margin-top: 0.25rem;
+    }
+
+    .posterior-update-controls {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      padding: 1.25rem;
+    }
+
+    .outcome-switch {
+      align-items: center;
+      background: #f7f4ed;
+      border-bottom: 1px solid rgba(16, 40, 50, 0.1);
+      border-top: 1px solid rgba(16, 40, 50, 0.1);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      padding: 1rem 1.25rem;
+    }
+
+    .outcome-switch > span {
+      color: #52646a;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      margin-right: 0.2rem;
+      text-transform: uppercase;
+    }
+
+    .outcome-button {
+      background: #ffffff;
+      border: 1px solid rgba(16, 40, 50, 0.22);
+      border-radius: 999px;
+      color: #102832;
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 750;
+      min-height: 38px;
+      padding: 0.45rem 0.85rem;
+    }
+
+    .outcome-button.active {
+      background: #102832;
+      border-color: #102832;
+      color: #ffffff;
+    }
+
+    .posterior-update-chart-wrap {
+      background: #102832;
+      color: #ffffff;
+      padding: 1.25rem;
+    }
+
+    .posterior-update-chart {
+      display: block;
+      height: auto;
+      width: 100%;
+    }
+
+    .posterior-update-chart text {
+      fill: rgba(255, 255, 255, 0.7);
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+    }
+
+    .posterior-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem 1.2rem;
+      margin-top: 0.8rem;
+    }
+
+    .posterior-legend span {
+      align-items: center;
+      color: rgba(255, 255, 255, 0.78);
+      display: inline-flex;
+      font-size: 0.76rem;
+      gap: 0.42rem;
+    }
+
+    .posterior-legend i {
+      border-radius: 999px;
+      display: inline-block;
+      height: 4px;
+      width: 24px;
+    }
+
+    .posterior-legend .prior-key {
+      background: #76a6cc;
+    }
+
+    .posterior-legend .likelihood-key {
+      background: #f1c66d;
+    }
+
+    .posterior-legend .updated-key {
+      background: #d86f5e;
+    }
+
+    .posterior-update-summary {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      padding: 1.25rem;
+    }
+
+    .posterior-update-summary div {
+      background: #f7f4ed;
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .posterior-update-summary span {
+      color: #52646a;
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .posterior-update-summary strong {
+      color: #102832;
+      display: block;
+      font-size: 1.05rem;
+      margin-top: 0.3rem;
+    }
+
+    .posterior-update-explanation {
+      border-top: 1px solid rgba(16, 40, 50, 0.1);
+      color: #52646a;
+      margin: 0;
+      padding: 1rem 1.25rem 1.25rem;
+    }
+
+    .method-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin: 2rem 0;
+    }
+
+    .method-card {
+      cursor: pointer;
+      text-align: left;
+      transition: transform 150ms ease, border-color 150ms ease, background 150ms ease;
+    }
+
+    .method-card:hover,
+    .method-card:focus-visible {
+      border-color: #76a6cc;
+      transform: translateY(-2px);
+    }
+
+    .method-card.active {
+      background: #102832;
+      border-color: #102832;
+      color: #ffffff;
+    }
+
+    .method-card.active strong {
+      color: #ffffff;
+    }
+
+    .method-card small {
+      color: #d86f5e;
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.45rem;
+      text-transform: uppercase;
+    }
+
+    .method-detail {
+      background: #eef1ed;
+      border-radius: 14px;
+      min-height: 170px;
+      padding: 1.25rem;
+    }
+
+    .method-detail h3 {
+      margin: 0 0 0.55rem;
+    }
+
+    .method-detail p {
+      margin: 0.45rem 0;
+    }
+
+    .lab {
+      background: #102832;
+      border-radius: 18px;
+      color: #eef2ed;
+      margin: 2.25rem 0;
+      overflow: hidden;
+    }
+
+    .lab-head {
+      align-items: flex-start;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+      display: flex;
+      gap: 1.5rem;
+      justify-content: space-between;
+      padding: 1.5rem;
+    }
+
+    .lab-head h3,
+    .lab-head p {
+      margin: 0;
+    }
+
+    .lab-head p {
+      color: rgba(238, 242, 237, 0.72);
+      margin-top: 0.45rem;
+      max-width: 690px;
+    }
+
+    .strategy-switch {
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      padding: 1.25rem 1.5rem;
+    }
+
+    .strategy-button {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      color: #ffffff;
+      cursor: pointer;
+      font: inherit;
+      padding: 0.9rem;
+      text-align: left;
+    }
+
+    .strategy-button.active {
+      background: #ffffff;
+      color: #102832;
+    }
+
+    .strategy-button span,
+    .strategy-button strong {
+      display: block;
+    }
+
+    .strategy-button span {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .strategy-button strong {
+      margin-top: 0.25rem;
+    }
+
+    .lab-message {
+      color: rgba(238, 242, 237, 0.74);
+      margin: 0;
+      padding: 0 1.5rem 1.15rem;
+    }
+
+    .ability-board {
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      padding: 0 1.5rem 1.5rem;
+    }
+
+    .ability-card {
+      background: rgba(255, 255, 255, 0.055);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 0.9rem;
+    }
+
+    .ability-card.top {
+      border-color: #8fd2bd;
+    }
+
+    .ability-card strong,
+    .ability-card span {
+      display: block;
+    }
+
+    .ability-card span {
+      color: rgba(255, 255, 255, 0.62);
+      font-size: 0.72rem;
+      margin-top: 0.35rem;
+    }
+
+    .ability-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      height: 8px;
+      margin-top: 0.75rem;
+      overflow: hidden;
+    }
+
+    .ability-fill {
+      background: #76a6cc;
+      border-radius: inherit;
+      height: 100%;
+      transition: width 180ms ease;
+    }
+
+    .pairwise-board {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+      border-top: 1px solid rgba(255, 255, 255, 0.13);
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      padding: 1.25rem 1.5rem;
+    }
+
+    .pairwise-card {
+      background: rgba(255, 255, 255, 0.055);
+      border-radius: 9px;
+      padding: 0.85rem;
+    }
+
+    .pairwise-card span {
+      color: rgba(255, 255, 255, 0.62);
+      display: block;
+      font-size: 0.7rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .candidate-heading {
+      align-items: end;
+      display: flex;
+      gap: 1rem;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem 0.85rem;
+    }
+
+    .candidate-heading h4,
+    .candidate-heading p {
+      margin: 0;
+    }
+
+    .candidate-heading p {
+      color: rgba(255, 255, 255, 0.62);
+      font-size: 0.82rem;
+    }
+
+    .candidate-grid {
+      display: grid;
+      gap: 0.7rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      padding: 0 1.5rem 1.5rem;
+    }
+
+    .candidate-card {
+      background: rgba(255, 255, 255, 0.055);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 0.85rem;
+    }
+
+    .candidate-card.recommended {
+      background: rgba(216, 111, 94, 0.15);
+      border-color: #d86f5e;
+    }
+
+    .candidate-card.acquired {
+      opacity: 0.32;
+    }
+
+    .candidate-card strong,
+    .candidate-card span {
+      display: block;
+    }
+
+    .candidate-card span {
+      color: rgba(255, 255, 255, 0.65);
+      font-size: 0.7rem;
+      margin-top: 0.3rem;
+    }
+
+    .score-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      height: 6px;
+      margin-top: 0.65rem;
+      overflow: hidden;
+    }
+
+    .score-fill {
+      background: #d86f5e;
+      border-radius: inherit;
+      height: 100%;
+    }
+
+    .lab-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      padding: 0 1.5rem 1.5rem;
+    }
+
+    .lab-actions .action-button {
+      flex: 1 1 190px;
+    }
+
+    .lab .action-button.secondary {
+      border-color: rgba(255, 255, 255, 0.35);
+      color: #ffffff;
+    }
+
+    .results-explorer {
+      border: 1px solid rgba(16, 40, 50, 0.14);
+      border-radius: 16px;
+      margin: 2rem 0;
+      overflow: hidden;
+    }
+
+    .results-controls {
+      background: #f7f4ed;
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+      padding: 1.25rem;
+    }
+
+    .results-controls label {
+      color: #52646a;
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+    }
+
+    .results-controls select {
+      background: #ffffff;
+      border: 1px solid rgba(16, 40, 50, 0.18);
+      border-radius: 8px;
+      color: #102832;
+      font: inherit;
+      min-height: 44px;
+      padding: 0 0.7rem;
+      width: 100%;
+    }
+
+    .budget-buttons {
+      display: grid;
+      gap: 0.45rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .budget-button {
+      background: #ffffff;
+      border: 1px solid rgba(16, 40, 50, 0.18);
+      border-radius: 8px;
+      color: #102832;
+      cursor: pointer;
+      font: inherit;
+      min-height: 44px;
+    }
+
+    .budget-button.active {
+      background: #102832;
+      color: #ffffff;
+    }
+
+    .result-list {
+      padding: 1.25rem;
+    }
+
+    .result-row {
+      align-items: center;
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: 130px minmax(0, 1fr) 70px;
+      margin: 0.85rem 0;
+    }
+
+    .result-row.best strong:first-child {
+      color: #d86f5e;
+    }
+
+    .result-track {
+      background: #e8ece8;
+      border-radius: 999px;
+      height: 16px;
+      overflow: hidden;
+    }
+
+    .result-fill {
+      background: #397d79;
+      border-radius: inherit;
+      display: block;
+      height: 100%;
+      transition: width 220ms ease;
+    }
+
+    .result-row.best .result-fill {
+      background: #d86f5e;
+    }
+
+    .result-value {
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .results-note {
+      color: #52646a;
+      margin: 0;
+      padding: 0 1.25rem 1.25rem;
+    }
+
+    .paper-stat-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin: 2rem 0;
+    }
+
+    .paper-stat b {
+      color: #d86f5e;
+      display: block;
+      font-size: 1.7rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .metric-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin: 2rem 0;
+    }
+
+    .metric-grid article {
+      border-top: 3px solid #397d79;
+      padding-top: 1rem;
+    }
+
+    .metric-grid h3 {
+      font-size: 1.25rem;
+      margin: 0 0 0.45rem;
+    }
+
+    .metric-grid p {
+      margin: 0;
+    }
+
+    .calibration-shell {
+      background: #102832;
+      border-radius: 18px;
+      color: #eef2ed;
+      margin: 2.25rem 0;
+      overflow: hidden;
+    }
+
+    .calibration-head {
+      align-items: flex-start;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+      display: flex;
+      gap: 1.5rem;
+      justify-content: space-between;
+      padding: 1.5rem;
+    }
+
+    .calibration-head h3,
+    .calibration-head p {
+      margin: 0;
+    }
+
+    .calibration-head p {
+      color: rgba(238, 242, 237, 0.72);
+      margin-top: 0.45rem;
+      max-width: 690px;
+    }
+
+    .calibration-steps {
+      display: grid;
+      gap: 0;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      padding: 1.25rem 1.5rem 0;
+    }
+
+    .calibration-step {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: rgba(255, 255, 255, 0.68);
+      cursor: pointer;
+      font: inherit;
+      padding: 0.85rem;
+      text-align: left;
+    }
+
+    .calibration-step:first-child {
+      border-radius: 9px 0 0 9px;
+    }
+
+    .calibration-step:last-child {
+      border-radius: 0 9px 9px 0;
+    }
+
+    .calibration-step.active {
+      background: #ffffff;
+      color: #102832;
+    }
+
+    .calibration-step span,
+    .calibration-step strong {
+      display: block;
+    }
+
+    .calibration-step span {
+      font-size: 0.66rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .calibration-step strong {
+      margin-top: 0.2rem;
+    }
+
+    .calibration-note {
+      color: rgba(238, 242, 237, 0.74);
+      margin: 0;
+      padding: 1rem 1.5rem;
+    }
+
+    .calibration-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+      padding: 0 1.5rem 1.5rem;
+    }
+
+    .calibration-panel {
+      background: rgba(255, 255, 255, 0.055);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      min-width: 0;
+      padding: 1rem;
+    }
+
+    .calibration-panel h4,
+    .calibration-panel p {
+      margin: 0;
+    }
+
+    .calibration-panel p {
+      color: rgba(238, 242, 237, 0.68);
+      font-size: 0.82rem;
+      margin-top: 0.35rem;
+    }
+
+    .matrix-scroll {
+      margin-top: 1rem;
+      overflow-x: auto;
+    }
+
+    .response-matrix {
+      border-collapse: separate;
+      border-spacing: 0.35rem;
+      min-width: 560px;
+      width: 100%;
+    }
+
+    .response-matrix th {
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 0.25rem;
+      text-align: center;
+    }
+
+    .response-matrix th:first-child {
+      text-align: left;
+    }
+
+    .response-cell {
+      border-radius: 6px;
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 800;
+      height: 34px;
+      text-align: center;
+      width: 42px;
+    }
+
+    .response-cell.correct {
+      background: rgba(143, 210, 189, 0.42);
+    }
+
+    .response-cell.incorrect {
+      background: rgba(216, 111, 94, 0.35);
+    }
+
+    .response-cell.hidden-response {
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.34);
+    }
+
+    .matrix-legend {
+      color: rgba(255, 255, 255, 0.65);
+      display: flex;
+      flex-wrap: wrap;
+      font-size: 0.72rem;
+      gap: 1rem;
+      margin-top: 0.75rem;
+    }
+
+    .matrix-key::before {
+      border-radius: 4px;
+      content: "";
+      display: inline-block;
+      height: 10px;
+      margin-right: 0.4rem;
+      width: 10px;
+    }
+
+    .matrix-key.correct::before {
+      background: rgba(143, 210, 189, 0.72);
+    }
+
+    .matrix-key.incorrect::before {
+      background: rgba(216, 111, 94, 0.72);
+    }
+
+    .estimate-list {
+      display: grid;
+      gap: 0.7rem;
+      margin-top: 1rem;
+    }
+
+    .estimate-row {
+      background: rgba(255, 255, 255, 0.055);
+      border-radius: 9px;
+      padding: 0.75rem;
+    }
+
+    .estimate-head {
+      align-items: baseline;
+      display: flex;
+      gap: 0.65rem;
+      justify-content: space-between;
+    }
+
+    .estimate-head span {
+      color: rgba(255, 255, 255, 0.62);
+      font-size: 0.7rem;
+      text-align: right;
+    }
+
+    .estimate-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      height: 8px;
+      margin-top: 0.55rem;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .estimate-fill {
+      background: #76a6cc;
+      border-radius: inherit;
+      height: 100%;
+      transition: width 180ms ease;
+    }
+
+    .estimate-row.discrimination .estimate-fill {
+      background: #d7aa54;
+    }
+
+    .estimate-row.ability .estimate-fill {
+      background: #8fd2bd;
+    }
+
+    .calibration-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      padding: 0 1.5rem 1.5rem;
+    }
+
+    .calibration-actions .action-button {
+      flex: 1 1 170px;
+    }
+
+    .calibration-shell .action-button.secondary {
+      border-color: rgba(255, 255, 255, 0.35);
+      color: #ffffff;
+    }
+
+    .fit-summary {
+      background: rgba(255, 255, 255, 0.055);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .fit-summary div {
+      border-top: 1px solid rgba(255, 255, 255, 0.13);
+      padding: 1rem 1.5rem;
+    }
+
+    .fit-summary span {
+      color: rgba(255, 255, 255, 0.62);
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+    }
+
+    .fit-summary strong {
+      font-size: 1.05rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .method-comparison {
+      border: 1px solid rgba(16, 40, 50, 0.14);
+      border-radius: 18px;
+      margin: 2rem 0;
+      overflow: hidden;
+    }
+
+    .comparison-head {
+      align-items: flex-start;
+      background: #f7f4ed;
+      border-bottom: 1px solid rgba(16, 40, 50, 0.12);
+      display: flex;
+      gap: 1.5rem;
+      justify-content: space-between;
+      padding: 1.4rem;
+    }
+
+    .comparison-head h3,
+    .comparison-head p {
+      margin: 0;
+    }
+
+    .comparison-head p {
+      color: #52646a;
+      margin-top: 0.4rem;
+      max-width: 650px;
+    }
+
+    .comparison-geometry-controls {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      padding: 1.25rem;
+    }
+
+    .comparison-posterior-summary {
+      background: #eef1ed;
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      padding: 1rem 1.25rem;
+    }
+
+    .comparison-posterior-summary div {
+      background: #ffffff;
+      border-radius: 9px;
+      padding: 0.8rem;
+    }
+
+    .comparison-posterior-summary span {
+      color: #52646a;
+      display: block;
+      font-size: 0.66rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .comparison-posterior-summary strong {
+      color: #102832;
+      display: block;
+      font-size: 1.05rem;
+      margin-top: 0.25rem;
+    }
+
+    .comparison-scenarios {
+      display: flex;
+      flex: 0 0 auto;
+      gap: 0.45rem;
+    }
+
+    .scenario-button {
+      background: #ffffff;
+      border: 1px solid rgba(16, 40, 50, 0.18);
+      border-radius: 8px;
+      color: #102832;
+      cursor: pointer;
+      font: inherit;
+      min-height: 42px;
+      padding: 0.55rem 0.75rem;
+    }
+
+    .scenario-button.active {
+      background: #102832;
+      color: #ffffff;
+    }
+
+    .comparison-scene {
+      background: #102832;
+      color: #ffffff;
+      padding: 1.25rem;
+    }
+
+    .comparison-posterior-chart-wrap {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.13);
+      padding-bottom: 1rem;
+    }
+
+    .comparison-posterior-chart {
+      display: block;
+      height: auto;
+      width: 100%;
+    }
+
+    .comparison-posterior-chart text {
+      fill: rgba(255, 255, 255, 0.72);
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+    }
+
+    .comparison-posterior-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem 1.2rem;
+      margin-top: 0.5rem;
+    }
+
+    .comparison-posterior-legend span {
+      align-items: center;
+      color: rgba(255, 255, 255, 0.75);
+      display: inline-flex;
+      font-size: 0.74rem;
+      gap: 0.4rem;
+    }
+
+    .comparison-posterior-legend i {
+      border-radius: 999px;
+      display: inline-block;
+      height: 4px;
+      width: 24px;
+    }
+
+    .comparison-posterior-legend .model-b-key {
+      background: #d86f5e;
+    }
+
+    .comparison-posterior-legend .model-c-key {
+      background: #76a6cc;
+    }
+
+    .comparison-posterior-legend .candidate-key {
+      background: #8fd2bd;
+    }
+
+    .comparison-axis {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+      height: 150px;
+      margin: 1.8rem 0 2rem;
+      position: relative;
+    }
+
+    .comparison-axis::before,
+    .comparison-axis::after {
+      bottom: -1.5rem;
+      color: rgba(255, 255, 255, 0.58);
+      font-size: 0.7rem;
+      position: absolute;
+    }
+
+    .comparison-axis::before {
+      content: "lower ability / easier items";
+      left: 0;
+    }
+
+    .comparison-axis::after {
+      content: "higher ability / harder items";
+      right: 0;
+    }
+
+    .axis-model {
+      background: rgba(118, 166, 204, 0.45);
+      border-radius: 999px;
+      height: 24px;
+      position: absolute;
+      top: 18px;
+      transform: translateX(-50%);
+      transition: left 180ms ease, width 180ms ease;
+    }
+
+    .axis-model:nth-of-type(2) {
+      top: 50px;
+    }
+
+    .axis-model:nth-of-type(3) {
+      top: 82px;
+    }
+
+    .axis-model:nth-of-type(4) {
+      top: 114px;
+    }
+
+    .axis-model::after {
+      background: #ffffff;
+      border-radius: 50%;
+      content: "";
+      height: 8px;
+      left: 50%;
+      position: absolute;
+      top: 8px;
+      transform: translateX(-50%);
+      width: 8px;
+    }
+
+    .axis-model span {
+      font-size: 0.68rem;
+      font-weight: 800;
+      left: 50%;
+      position: absolute;
+      top: -1.15rem;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+
+    .axis-item {
+      border-left: 2px solid #d7aa54;
+      bottom: 0;
+      height: 145px;
+      position: absolute;
+      transform: translateX(-50%);
+    }
+
+    .axis-item span {
+      background: #d7aa54;
+      border-radius: 5px;
+      color: #102832;
+      font-size: 0.66rem;
+      font-weight: 800;
+      left: 0;
+      padding: 0.2rem 0.3rem;
+      position: absolute;
+      top: -1.2rem;
+      transform: translateX(-50%);
+    }
+
+    .comparison-note {
+      color: rgba(255, 255, 255, 0.7);
+      margin: 0;
+    }
+
+    .comparison-table {
+      padding: 1.25rem;
+    }
+
+    .comparison-row {
+      align-items: center;
+      border-bottom: 1px solid rgba(16, 40, 50, 0.1);
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: 92px minmax(0, 1fr) 128px;
+      padding: 0.9rem 0;
+    }
+
+    .comparison-row:last-child {
+      border-bottom: 0;
+    }
+
+    .comparison-row.active {
+      background: rgba(216, 111, 94, 0.06);
+      margin: 0 -1.25rem;
+      padding-left: 1.25rem;
+      padding-right: 1.25rem;
+    }
+
+    .comparison-method strong,
+    .comparison-method span {
+      display: block;
+    }
+
+    .comparison-method span {
+      color: #52646a;
+      font-size: 0.68rem;
+      margin-top: 0.25rem;
+    }
+
+    .comparison-scores {
+      display: grid;
+      gap: 0.35rem;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+
+    .comparison-score {
+      text-align: center;
+    }
+
+    .comparison-score span {
+      color: #52646a;
+      display: block;
+      font-size: 0.62rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .comparison-score-track {
+      align-items: end;
+      background: #e8ece8;
+      border-radius: 4px;
+      display: flex;
+      height: 42px;
+      overflow: hidden;
+    }
+
+    .comparison-score-fill {
+      background: #397d79;
+      border-radius: 4px;
+      width: 100%;
+    }
+
+    .comparison-score.recommended .comparison-score-fill {
+      background: #d86f5e;
+    }
+
+    .comparison-result {
+      color: #52646a;
+      font-size: 0.75rem;
+    }
+
+    .comparison-result strong {
+      color: #102832;
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .comparison-explanation {
+      background: #eef1ed;
+      border-top: 1px solid rgba(16, 40, 50, 0.1);
+      padding: 1rem 1.25rem;
+    }
+
+    .comparison-explanation strong {
+      color: #102832;
+    }
+
+    @media (max-width: 900px) {
+      .method-grid,
+      .candidate-grid,
+      .paper-stat-grid,
+      .comparison-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .comparison-result {
+        grid-column: 1 / -1;
+      }
+
+      .ability-board {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .rank-grid,
+      .rank-controls,
+      .irt-controls,
+      .posterior-update-controls,
+      .posterior-update-summary,
+      .comparison-geometry-controls,
+      .comparison-posterior-summary,
+      .calibration-steps,
+      .calibration-grid,
+      .fit-summary,
+      .posterior-summary,
+      .irt-summary,
+      .method-grid,
+      .strategy-switch,
+      .ability-board,
+      .pairwise-board,
+      .candidate-grid,
+      .results-controls,
+      .budget-buttons,
+      .paper-stat-grid,
+      .metric-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .interactive-head,
+      .lab-head,
+      .candidate-heading,
+      .calibration-head,
+      .comparison-head {
+        display: block;
+      }
+
+      .calibration-step,
+      .calibration-step:first-child,
+      .calibration-step:last-child {
+        border-radius: 8px;
+        margin-bottom: 0.45rem;
+      }
+
+      .comparison-scenarios {
+        margin-top: 1rem;
+      }
+
+      .comparison-row {
+        grid-template-columns: 1fr;
+      }
+
+      .comparison-scores {
+        min-width: 420px;
+      }
+
+      .comparison-table {
+        overflow-x: auto;
+      }
+
+      .live-badge {
+        display: inline-block;
+        margin-top: 1rem;
+      }
+
+      .math-display {
+        font-size: 0.9rem;
+        text-align: left;
+      }
+
+      .result-row {
+        grid-template-columns: 92px minmax(0, 1fr) 58px;
+      }
+    }
+  </style>
+</head>
+
+<body class="article-page">
+  <div class="reading-progress" aria-hidden="true">
+    <span id="reading-progress-bar"></span>
+  </div>
+
+  <header class="site-header article-header">
+    <a class="site-brand" href="../../index.html#top" aria-label="Bonaventure F. P. Dossou home">
+      <span class="brand-mark">BD</span>
+      <span>Bonaventure F. P. Dossou</span>
+    </a>
+
+    <nav aria-label="Primary navigation">
+      <a href="../../index.html#top">About</a>
+      <a href="../../index.html#research">Research</a>
+      <a href="../../index.html#education">Education</a>
+      <a href="../../index.html#experience">Experience</a>
+      <a href="../../index.html#publications">Publications</a>
+      <a href="../../index.html#recognition">Awards</a>
+      <a href="../../index.html#skills">Skills</a>
+      <a class="active" href="../index.html">Blog</a>
+    </nav>
+  </header>
+
+  <main>
+    <article>
+      <header class="article-hero">
+        <div class="article-hero-grid">
+          <div class="article-hero-copy">
+            <a class="series-link" href="../index.html">
+              Active Learning Under Real Constraints
+              <span>03 / 03</span>
+            </a>
+
+            <h1>
+              Are We Acquiring Information<br />
+              <em>for the Right Goal?</em>
+            </h1>
+
+            <p class="dek">
+              Estimating every model accurately and identifying the correct
+              ranking are related goals, but they are not the same evaluation
+              problem.
+            </p>
+
+            <div class="byline">
+              <span>By <strong>Bonaventure F. P. Dossou</strong></span>
+              <span>COLM 2026</span>
+              <span>Interactive essay</span>
+            </div>
+
+            <div class="hero-actions">
+              <a class="primary-link" href="https://openreview.net/forum?id=WGF7BPL7WF">Read the paper</a>
+              <a href="https://github.com/bonaventuredossou/al_rankbald">View the code</a>
+              <a href="../index.html">All essays</a>
+            </div>
+          </div>
+
+          <div class="hero-orbit" aria-hidden="true">
+            <div class="hero-orbit-label">Which comparison changes the ranking?</div>
+            <div class="ring ring-a"></div>
+            <div class="ring ring-b"></div>
+            <div class="ring ring-c"></div>
+            <span class="point class-a p1">1</span>
+            <span class="point class-a p2">2</span>
+            <span class="point class-b p4">3</span>
+            <span class="point class-b p5">4</span>
+            <span class="point unknown p7">?</span>
+            <div class="hero-divider"></div>
+          </div>
+        </div>
+      </header>
+
+      <div class="article-body">
+        <section aria-labelledby="goal-title">
+          <div class="section-marker">01: The evaluation goal changes the acquisition</div>
+
+          <h2 id="goal-title">
+            A precise ability estimate does not automatically give a reliable ranking.
+          </h2>
+
+          <p class="lead">
+            Traditional adaptive evaluation asks which item will improve our
+            estimate of a model's latent ability. RankBALD asks a different
+            question: which item will tell us whether one model truly outranks
+            another?
+          </p>
+
+          <div class="definition-card">
+            <span class="definition-label">The central claim</span>
+            <p>
+              Item selection should be aligned with the downstream decision.
+              When the decision is a leaderboard ordering, acquisition should
+              directly target uncertainty near pairwise ranking boundaries.
+            </p>
+          </div>
+
+          <div class="rank-grid">
+            <article class="rank-card">
+              <strong>Ability estimation</strong>
+              <p>
+                Reduce uncertainty around each model's scalar capability
+                parameter. This is useful, but it can spend budget where the
+                final ordering is already obvious.
+              </p>
+            </article>
+
+            <article class="rank-card">
+              <strong>Ranking recovery</strong>
+              <p>
+                Resolve uncertain pairwise comparisons, especially between
+                nearby models whose posterior ability distributions overlap.
+              </p>
+            </article>
+          </div>
+
+          <div class="interactive-shell" id="posterior-playground">
+            <div class="interactive-head">
+              <div>
+                <h3>When is a ranking uncertain?</h3>
+                <p>
+                  Move the two posterior means and their shared uncertainty.
+                  The probability of A outranking B depends on their separation
+                  relative to posterior uncertainty.
+                </p>
+              </div>
+              <span class="live-badge">Interactive</span>
+            </div>
+
+            <div class="rank-controls">
+              <div class="control">
+                <label for="ability-a-slider">Model A mean ability</label>
+                <div class="control-line">
+                  <input id="ability-a-slider" type="range" min="-1.5" max="1.5" step="0.05" value="0.35" />
+                  <output id="ability-a-value" for="ability-a-slider">0.35</output>
+                </div>
+              </div>
+
+              <div class="control">
+                <label for="ability-b-slider">Model B mean ability</label>
+                <div class="control-line">
+                  <input id="ability-b-slider" type="range" min="-1.5" max="1.5" step="0.05" value="0.20" />
+                  <output id="ability-b-value" for="ability-b-slider">0.20</output>
+                </div>
+              </div>
+
+              <div class="control">
+                <label for="posterior-sigma-slider">Posterior standard deviation</label>
+                <div class="control-line">
+                  <input id="posterior-sigma-slider" type="range" min="0.05" max="0.65" step="0.05" value="0.30" />
+                  <output id="posterior-sigma-value" for="posterior-sigma-slider">0.30</output>
+                </div>
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button class="action-button secondary" id="posterior-close" type="button">Make the models close</button>
+              <button class="action-button secondary" id="posterior-separate" type="button">Separate the models</button>
+            </div>
+
+            <div class="posterior-board">
+              <div class="posterior-axis" aria-hidden="true">
+                <div class="posterior-band a" id="posterior-band-a">
+                  <span class="posterior-label">Model A</span>
+                </div>
+                <div class="posterior-band b" id="posterior-band-b">
+                  <span class="posterior-label">Model B</span>
+                </div>
+              </div>
+
+              <div class="posterior-summary" aria-live="polite">
+                <div>
+                  <span>Ability gap</span>
+                  <strong id="posterior-gap">0.15</strong>
+                </div>
+                <div>
+                  <span>P(A outranks B)</span>
+                  <strong id="posterior-probability">63.8%</strong>
+                </div>
+                <div>
+                  <span>Ranking state</span>
+                  <strong id="posterior-state">Uncertain boundary</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="caveat-card">
+            <span>Key distinction</span>
+            <h3>Uncertainty matters where it can change the decision.</h3>
+            <p>
+              Reducing the variance of a clearly first-place or last-place model
+              may improve its ability estimate without changing the leaderboard.
+              A smaller reduction near a close pair can be far more valuable for
+              ranking.
+            </p>
+          </div>
+        </section>
+
+        <section aria-labelledby="irt-title">
+          <div class="section-marker">02: The measurement model</div>
+
+          <h2 id="irt-title">
+            Item Response Theory explains where an evaluation item is informative.
+          </h2>
+
+          <p>
+            In the two-parameter logistic IRT model, every language model has a
+            latent ability, and every evaluation item has a difficulty and a
+            discrimination parameter. An item is most informative when its
+            difficulty lies near the ability region we need to resolve.
+          </p>
+
+          <div class="formula-card">
+            <div class="math-block">
+              <span>Probability of a correct response</span>
+              <div class="math-display">
+                \[p(U_{kj}=1\mid\theta_k)=\sigma\!\left(a_j(\theta_k-b_j)\right)\]
+              </div>
+              <p class="math-explanation">
+                Model k has ability \(\theta_k\). Item j has difficulty
+                \(b_j\) and positive discrimination \(a_j\).
+              </p>
+            </div>
+
+            <div class="math-block">
+              <span>Fisher information</span>
+              <div class="math-display">
+                \[\mathcal{I}(\theta_k,a_j,b_j)=a_j^2p_{kj}(\theta_k)\left(1-p_{kj}(\theta_k)\right)\]
+              </div>
+              <p class="math-explanation">
+                The response is most sensitive near the middle of the logistic
+                curve. Items that are far too easy or far too difficult add
+                little information.
+              </p>
+            </div>
+          </div>
+
+          <div class="interactive-shell" id="irt-playground">
+            <div class="interactive-head">
+              <div>
+                <h3>Move an item across the ability scale</h3>
+                <p>
+                  Adjust model ability, item difficulty, and discrimination.
+                  Watch the predicted correctness and information change.
+                </p>
+              </div>
+              <span class="live-badge">2PL IRT</span>
+            </div>
+
+            <div class="irt-controls">
+              <div class="control">
+                <label for="irt-theta-slider">Ability theta</label>
+                <div class="control-line">
+                  <input id="irt-theta-slider" type="range" min="-2.5" max="2.5" step="0.1" value="0.4" />
+                  <output id="irt-theta-value" for="irt-theta-slider">0.4</output>
+                </div>
+              </div>
+
+              <div class="control">
+                <label for="irt-difficulty-slider">Difficulty b</label>
+                <div class="control-line">
+                  <input id="irt-difficulty-slider" type="range" min="-2.5" max="2.5" step="0.1" value="0.4" />
+                  <output id="irt-difficulty-value" for="irt-difficulty-slider">0.4</output>
+                </div>
+              </div>
+
+              <div class="control">
+                <label for="irt-discrimination-slider">Discrimination a</label>
+                <div class="control-line">
+                  <input id="irt-discrimination-slider" type="range" min="0.4" max="3" step="0.1" value="1.6" />
+                  <output id="irt-discrimination-value" for="irt-discrimination-slider">1.6</output>
+                </div>
+              </div>
+            </div>
+
+            <div class="irt-chart-wrap">
+              <svg class="irt-chart" id="irt-chart" viewBox="0 0 720 280" role="img" aria-labelledby="irt-chart-title irt-chart-description">
+                <title id="irt-chart-title">IRT response curve</title>
+                <desc id="irt-chart-description">A logistic response curve with markers for model ability and item difficulty.</desc>
+                <line x1="55" y1="235" x2="690" y2="235" stroke="rgba(255,255,255,.35)" />
+                <line x1="55" y1="25" x2="55" y2="235" stroke="rgba(255,255,255,.35)" />
+                <path id="irt-curve" fill="none" stroke="#8fd2bd" stroke-width="5" d="" />
+                <line id="irt-theta-line" x1="360" y1="25" x2="360" y2="235" stroke="#d86f5e" stroke-width="2" stroke-dasharray="6 5" />
+                <line id="irt-difficulty-line" x1="360" y1="25" x2="360" y2="235" stroke="#76a6cc" stroke-width="2" stroke-dasharray="3 5" />
+                <circle id="irt-point" cx="360" cy="130" r="8" fill="#ffffff" stroke="#d86f5e" stroke-width="4" />
+                <text x="48" y="250">-2.5</text>
+                <text x="675" y="250">2.5</text>
+                <text x="22" y="238">0</text>
+                <text x="18" y="32">1</text>
+                <text x="312" y="273">latent ability</text>
+              </svg>
+            </div>
+
+            <div class="irt-summary" aria-live="polite">
+              <div>
+                <span>Correctness probability</span>
+                <strong id="irt-probability">50.0%</strong>
+              </div>
+              <div>
+                <span>Fisher information</span>
+                <strong id="irt-information">0.640</strong>
+              </div>
+              <div>
+                <span>Interpretation</span>
+                <strong id="irt-interpretation">Well aligned</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="interactive-shell" id="irt-posterior-lab">
+            <div class="interactive-head">
+              <div>
+                <h3>Watch one answer update the model ability posterior</h3>
+                <p>
+                  The horizontal axis is every plausible value of model ability.
+                  Change the prior belief and item parameters, then observe a
+                  correct or incorrect answer to see Bayes' rule reshape the posterior.
+                </p>
+              </div>
+              <span class="live-badge">Live Bayesian update</span>
+            </div>
+
+            <div class="posterior-update-controls">
+              <div class="control">
+                <label for="posterior-prior-mean-slider">Prior ability mean</label>
+                <div class="control-line">
+                  <input id="posterior-prior-mean-slider" type="range" min="-2" max="2" step="0.1" value="0" />
+                  <output id="posterior-prior-mean-value" for="posterior-prior-mean-slider">0.0</output>
+                </div>
+              </div>
+
+              <div class="control">
+                <label for="posterior-prior-sd-slider">Prior uncertainty</label>
+                <div class="control-line">
+                  <input id="posterior-prior-sd-slider" type="range" min="0.2" max="1.3" step="0.05" value="0.75" />
+                  <output id="posterior-prior-sd-value" for="posterior-prior-sd-slider">0.75</output>
+                </div>
+              </div>
+
+              <div class="control">
+                <label for="posterior-item-difficulty-slider">Item difficulty b</label>
+                <div class="control-line">
+                  <input id="posterior-item-difficulty-slider" type="range" min="-2.5" max="2.5" step="0.1" value="0.4" />
+                  <output id="posterior-item-difficulty-value" for="posterior-item-difficulty-slider">0.4</output>
+                </div>
+              </div>
+
+              <div class="control">
+                <label for="posterior-item-discrimination-slider">Discrimination a</label>
+                <div class="control-line">
+                  <input id="posterior-item-discrimination-slider" type="range" min="0.4" max="3" step="0.1" value="1.8" />
+                  <output id="posterior-item-discrimination-value" for="posterior-item-discrimination-slider">1.8</output>
+                </div>
+              </div>
+            </div>
+
+            <div class="outcome-switch" aria-label="Observed response">
+              <span>Observed response</span>
+              <button class="outcome-button active" type="button" data-irt-outcome="none">Not observed</button>
+              <button class="outcome-button" type="button" data-irt-outcome="1">Correct answer</button>
+              <button class="outcome-button" type="button" data-irt-outcome="0">Incorrect answer</button>
+            </div>
+
+            <div class="posterior-update-chart-wrap">
+              <svg class="posterior-update-chart" id="posterior-update-chart" viewBox="0 0 760 365" role="img" aria-labelledby="posterior-update-title posterior-update-description">
+                <title id="posterior-update-title">IRT likelihood and model ability posterior</title>
+                <desc id="posterior-update-description">The upper panel shows the response likelihood across model ability. The lower panel compares the prior and updated posterior ability distributions.</desc>
+
+                <text x="70" y="22">Response likelihood across ability</text>
+                <line x1="70" y1="150" x2="720" y2="150" stroke="rgba(255,255,255,.28)" />
+                <line x1="70" y1="38" x2="70" y2="150" stroke="rgba(255,255,255,.28)" />
+                <text x="48" y="153">0</text>
+                <text x="48" y="45">1</text>
+                <path id="posterior-likelihood-path" fill="none" stroke="#f1c66d" stroke-width="4" d="" />
+
+                <text x="70" y="196">Belief about model ability</text>
+                <line x1="70" y1="325" x2="720" y2="325" stroke="rgba(255,255,255,.28)" />
+                <line x1="70" y1="210" x2="70" y2="325" stroke="rgba(255,255,255,.28)" />
+                <path id="posterior-prior-path" fill="none" stroke="#76a6cc" stroke-width="4" stroke-dasharray="8 6" d="" />
+                <path id="posterior-updated-path" fill="none" stroke="#d86f5e" stroke-width="5" d="" />
+                <line id="posterior-item-marker" x1="395" y1="38" x2="395" y2="325" stroke="#8fd2bd" stroke-width="2" stroke-dasharray="4 6" />
+                <line id="posterior-mean-marker" x1="395" y1="210" x2="395" y2="325" stroke="#ffffff" stroke-width="2" />
+
+                <text x="66" y="347">-3</text>
+                <text x="710" y="347">3</text>
+                <text x="340" y="359">possible model ability theta</text>
+                <text id="posterior-item-label" x="403" y="52">item b = 0.4</text>
+                <text id="posterior-mean-label" x="403" y="220">posterior mean = 0.00</text>
+              </svg>
+
+              <div class="posterior-legend" aria-hidden="true">
+                <span><i class="prior-key"></i>Prior ability distribution</span>
+                <span><i class="likelihood-key"></i>Likelihood of the selected response</span>
+                <span><i class="updated-key"></i>Posterior after the response</span>
+              </div>
+            </div>
+
+            <div class="posterior-update-summary" aria-live="polite">
+              <div>
+                <span>Expected P(correct)</span>
+                <strong id="posterior-predictive-probability">43.6%</strong>
+              </div>
+              <div>
+                <span>Prior ability</span>
+                <strong id="posterior-prior-summary">0.00 +/- 0.75</strong>
+              </div>
+              <div>
+                <span>Posterior ability</span>
+                <strong id="posterior-updated-summary">0.00 +/- 0.75</strong>
+              </div>
+              <div>
+                <span>Information gain</span>
+                <strong id="posterior-information-gain">0.000 nats</strong>
+              </div>
+            </div>
+
+            <p class="posterior-update-explanation" id="posterior-update-explanation">
+              No response is selected, so the posterior equals the prior. Choose
+              an answer above to apply the item likelihood.
+            </p>
+          </div>
+
+          <h3>From a response matrix to item and model parameters</h3>
+
+          <p>
+            In a real calibration set, we begin with a pool of models answering
+            a pool of questions. The binary response matrix is observed, while
+            model abilities and item parameters are unknown. A 2PL estimator
+            fits them jointly by increasing the likelihood of the observed
+            correct and incorrect responses. The paper uses item parameters
+            calibrated in advance from 102 language models and holds them fixed
+            during active evaluation; this lab visualizes that upstream calibration step.
+          </p>
+
+          <div class="formula-card">
+            <div class="math-block">
+              <span>Joint 2PL calibration objective</span>
+              <div class="math-display">
+                \[\max_{\boldsymbol\theta,\mathbf a,\mathbf b}\sum_{k=1}^{K}\sum_{j=1}^{N}\left[U_{kj}\log p_{kj}+(1-U_{kj})\log(1-p_{kj})\right],\qquad a_j>0\]
+              </div>
+              <p class="math-explanation">
+                Difficulty \(b_j\) locates the midpoint of the item response
+                curve. Discrimination \(a_j\) controls its slope. Ability
+                \(\theta_k\) locates each model on the same latent scale.
+              </p>
+            </div>
+          </div>
+
+          <div class="calibration-shell" id="irt-calibration-lab">
+            <div class="calibration-head">
+              <div>
+                <h3>Calibrate a miniature benchmark</h3>
+                <p>
+                  Six models answer eight questions. Step through the observed
+                  responses, estimated item properties, and recovered model abilities.
+                </p>
+              </div>
+              <span class="live-badge">Interactive estimation</span>
+            </div>
+
+            <div class="calibration-steps" aria-label="IRT calibration stages">
+              <button class="calibration-step active" type="button" data-calibration-stage="responses">
+                <span>Stage 1</span>
+                <strong>Observe responses</strong>
+              </button>
+              <button class="calibration-step" type="button" data-calibration-stage="items">
+                <span>Stage 2</span>
+                <strong>Estimate questions</strong>
+              </button>
+              <button class="calibration-step" type="button" data-calibration-stage="abilities">
+                <span>Stage 3</span>
+                <strong>Recover abilities</strong>
+              </button>
+            </div>
+
+            <p class="calibration-note" id="calibration-note"></p>
+
+            <div class="calibration-grid">
+              <div class="calibration-panel">
+                <h4>Model by question response matrix</h4>
+                <p>Each cell is one observed correctness outcome \(U_{kj}\).</p>
+                <div class="matrix-scroll">
+                  <table class="response-matrix" id="response-matrix"></table>
+                </div>
+                <div class="matrix-legend">
+                  <span class="matrix-key correct">Correct response</span>
+                  <span class="matrix-key incorrect">Incorrect response</span>
+                </div>
+              </div>
+
+              <div class="calibration-panel">
+                <h4 id="estimate-panel-title">Pool summary</h4>
+                <p id="estimate-panel-description"></p>
+                <div class="estimate-list" id="estimate-list" aria-live="polite"></div>
+              </div>
+            </div>
+
+            <div class="calibration-actions">
+              <button class="action-button" id="calibration-step-button" type="button">Run one estimation step</button>
+              <button class="action-button" id="calibration-run-button" type="button">Run 25 steps</button>
+              <button class="action-button secondary" id="calibration-reveal-button" type="button">Reveal generating parameters</button>
+              <button class="action-button secondary" id="calibration-reset-button" type="button">Reset estimates</button>
+            </div>
+
+            <div class="fit-summary" aria-live="polite">
+              <div>
+                <span>Optimization steps</span>
+                <strong id="calibration-iteration">0</strong>
+              </div>
+              <div>
+                <span>Log likelihood</span>
+                <strong id="calibration-likelihood">-33.27</strong>
+              </div>
+              <div>
+                <span>Recovered model order</span>
+                <strong id="calibration-ranking">M1 = M2 = M3 = M4 = M5 = M6</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="caveat-card">
+            <span>How discrimination is learned</span>
+            <h3>A discriminative question separates nearby ability levels sharply.</h3>
+            <p>
+              During joint maximum-likelihood fitting, a question receives a
+              larger positive discrimination estimate when its response pattern
+              changes consistently from incorrect to correct as estimated model
+              ability increases. A noisy or nearly uniform response pattern
+              produces a flatter fitted curve and a smaller discrimination estimate.
+            </p>
+          </div>
+        </section>
+
+        <section aria-labelledby="progression-title">
+          <div class="section-marker">03: From BALD to RankBALD</div>
+
+          <h2 id="progression-title">
+            Each acquisition criterion moves closer to the decision we care about.
+          </h2>
+
+          <p>
+            The paper develops a sequence of Bayesian acquisition functions.
+            Select a method to see what it measures and what the next method adds.
+          </p>
+
+          <div class="method-grid" id="method-grid">
+            <button class="method-card active" type="button" data-method="bald">
+              <small>Step 1</small>
+              <strong>BALD</strong>
+              <span>Response and ability information</span>
+            </button>
+
+            <button class="method-card" type="button" data-method="diff">
+              <small>Step 2</small>
+              <strong>DiffBALD</strong>
+              <span>Add difficulty alignment</span>
+            </button>
+
+            <button class="method-card" type="button" data-method="var">
+              <small>Step 3</small>
+              <strong>VarBALD</strong>
+              <span>Add variance reduction</span>
+            </button>
+
+            <button class="method-card" type="button" data-method="rank">
+              <small>Step 4</small>
+              <strong>RankBALD</strong>
+              <span>Change the target to ordering</span>
+            </button>
+          </div>
+
+          <div class="method-detail" id="method-detail" aria-live="polite"></div>
+
+          <div class="method-comparison" id="method-comparison">
+            <div class="comparison-head">
+              <div>
+                <h3>See the four objectives inspect the same candidate pool</h3>
+                <p>
+                  Every row scores the same seven questions. Change the posterior
+                  geometry to see when ability information and ranking information
+                  diverge. The normalized bars are teaching proxies for the four objectives.
+                </p>
+              </div>
+              <div class="comparison-scenarios" aria-label="Posterior scenario">
+                <button class="scenario-button active" type="button" data-comparison-scenario="close">Close race</button>
+                <button class="scenario-button" type="button" data-comparison-scenario="separated">Separated models</button>
+              </div>
+            </div>
+
+            <div class="comparison-geometry-controls" aria-label="Posterior geometry controls">
+              <div class="control">
+                <label for="comparison-b-mean-slider">Model B posterior mean</label>
+                <div class="control-line">
+                  <input id="comparison-b-mean-slider" type="range" min="-1.5" max="1.5" step="0.05" value="0.36" />
+                  <output id="comparison-b-mean-value" for="comparison-b-mean-slider">0.36</output>
+                </div>
+              </div>
+
+              <div class="control">
+                <label for="comparison-b-sigma-slider">Model B uncertainty</label>
+                <div class="control-line">
+                  <input id="comparison-b-sigma-slider" type="range" min="0.08" max="0.75" step="0.01" value="0.42" />
+                  <output id="comparison-b-sigma-value" for="comparison-b-sigma-slider">0.42</output>
+                </div>
+              </div>
+
+              <div class="control">
+                <label for="comparison-c-mean-slider">Model C posterior mean</label>
+                <div class="control-line">
+                  <input id="comparison-c-mean-slider" type="range" min="-1.5" max="1.5" step="0.05" value="0.27" />
+                  <output id="comparison-c-mean-value" for="comparison-c-mean-slider">0.27</output>
+                </div>
+              </div>
+
+              <div class="control">
+                <label for="comparison-c-sigma-slider">Model C uncertainty</label>
+                <div class="control-line">
+                  <input id="comparison-c-sigma-slider" type="range" min="0.08" max="0.75" step="0.01" value="0.43" />
+                  <output id="comparison-c-sigma-value" for="comparison-c-sigma-slider">0.43</output>
+                </div>
+              </div>
+            </div>
+
+            <div class="comparison-posterior-summary" aria-live="polite">
+              <div>
+                <span>Posterior mean gap</span>
+                <strong id="comparison-posterior-gap">0.09</strong>
+              </div>
+              <div>
+                <span>P(B outranks C)</span>
+                <strong id="comparison-order-probability">56.0%</strong>
+              </div>
+              <div>
+                <span>Pairwise ranking state</span>
+                <strong id="comparison-order-state">Uncertain boundary</strong>
+              </div>
+            </div>
+
+            <div class="comparison-scene">
+              <div class="comparison-posterior-chart-wrap">
+                <svg class="comparison-posterior-chart" id="comparison-posterior-chart" viewBox="0 0 760 250" role="img" aria-labelledby="comparison-posterior-title comparison-posterior-description">
+                  <title id="comparison-posterior-title">Posterior ability distributions for models B and C</title>
+                  <desc id="comparison-posterior-description">Two adjustable posterior density curves and the seven candidate question difficulties on the same ability axis.</desc>
+                  <text x="70" y="22">Posterior density and candidate difficulty</text>
+                  <line x1="70" y1="205" x2="720" y2="205" stroke="rgba(255,255,255,.32)" />
+                  <line x1="70" y1="38" x2="70" y2="205" stroke="rgba(255,255,255,.32)" />
+                  <g id="comparison-posterior-items"></g>
+                  <path id="comparison-posterior-b-path" fill="rgba(216,111,94,.14)" stroke="#d86f5e" stroke-width="5" d="" />
+                  <path id="comparison-posterior-c-path" fill="rgba(118,166,204,.12)" stroke="#76a6cc" stroke-width="5" d="" />
+                  <line id="comparison-b-mean-line" x1="395" y1="38" x2="395" y2="205" stroke="#d86f5e" stroke-width="2" stroke-dasharray="5 5" />
+                  <line id="comparison-c-mean-line" x1="380" y1="38" x2="380" y2="205" stroke="#76a6cc" stroke-width="2" stroke-dasharray="5 5" />
+                  <text x="66" y="227">-2</text>
+                  <text x="712" y="227">2</text>
+                  <text x="338" y="242">latent model ability</text>
+                </svg>
+                <div class="comparison-posterior-legend" aria-hidden="true">
+                  <span><i class="model-b-key"></i>Model B posterior</span>
+                  <span><i class="model-c-key"></i>Model C posterior</span>
+                  <span><i class="candidate-key"></i>Candidate question difficulty</span>
+                </div>
+              </div>
+              <div class="comparison-axis" id="comparison-axis" aria-label="Posterior model abilities and candidate item difficulties"></div>
+              <p class="comparison-note" id="comparison-scene-note"></p>
+            </div>
+
+            <div class="comparison-table" id="comparison-table" aria-live="polite"></div>
+
+            <div class="comparison-explanation" id="comparison-explanation" aria-live="polite">
+              <strong>Select a method above or inspect its row.</strong>
+            </div>
+          </div>
+
+          <div class="formula-card">
+            <div class="math-block">
+              <span>Pairwise ordering variable</span>
+              <div class="math-display">
+                \[Z_{s,t}^{r}=\mathbf{1}[\theta_s^{r}>\theta_t^{r}]\]
+              </div>
+              <p class="math-explanation">
+                The variable records which model in a pair has the greater
+                latent ability at acquisition round r.
+              </p>
+            </div>
+
+            <div class="math-block">
+              <span>Observable joint response</span>
+              <div class="math-display">
+                \[Y_{s,t,j}^{r}=(U_{sj}^{r},U_{tj}^{r})\in\{0,1\}^{2}\]
+              </div>
+              <p class="math-explanation">
+                Abilities are latent, so the evaluator learns about ordering
+                through the two models' correctness outcomes on candidate item j.
+              </p>
+            </div>
+
+            <div class="math-block">
+              <span>RankBALD acquisition score</span>
+              <div class="math-display">
+                \[\operatorname{RankBALD}_{j}^{r}=\frac{\sum_{(s,t)\in\mathcal{P}}\omega(d_{s,t})\bar\pi_{js}^{r}\bar\pi_{jt}^{r}I(Z_{s,t}^{r};Y_{s,t,j}^{r}\mid p_E^{r})}{\sum_{(s,t)\in\mathcal{P}}\omega(d_{s,t})\bar\pi_{js}^{r}\bar\pi_{jt}^{r}+\varepsilon}\]
+              </div>
+              <p class="math-explanation">
+                The score combines pairwise mutual information, difficulty
+                alignment, and greater weight for nearby models. The paper uses
+                64 Monte Carlo posterior samples to estimate the required expectations.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="lab-title">
+          <div class="section-marker">04: Interactive acquisition lab</div>
+
+          <h2 id="lab-title">
+            Watch ability-focused and ranking-focused acquisition choose differently.
+          </h2>
+
+          <p>
+            This scaled teaching simulation uses a simple proxy for each
+            acquisition objective. It is designed to explain the selection logic,
+            not reproduce the paper's full Laplace approximation and Monte Carlo
+            estimator.
+          </p>
+
+          <div class="lab" id="rank-lab">
+            <div class="lab-head">
+              <div>
+                <h3>Build a small adaptive benchmark</h3>
+                <p>
+                  Changing strategy resets the simulation so the two acquisition
+                  paths always begin from the same posterior state.
+                </p>
+              </div>
+              <span class="live-badge">Interactive</span>
+            </div>
+
+            <div class="strategy-switch">
+              <button class="strategy-button active" type="button" data-lab-strategy="bald">
+                <span>Ability-focused</span>
+                <strong>BALD proxy</strong>
+              </button>
+
+              <button class="strategy-button" type="button" data-lab-strategy="rank">
+                <span>Ranking-focused</span>
+                <strong>RankBALD proxy</strong>
+              </button>
+            </div>
+
+            <p class="lab-message" id="lab-message"></p>
+
+            <div class="ability-board" id="ability-board" aria-live="polite"></div>
+
+            <div class="pairwise-board" id="pairwise-board" aria-live="polite"></div>
+
+            <div class="candidate-heading">
+              <div>
+                <h4>Candidate evaluation items</h4>
+                <p>The coral card is the next recommendation.</p>
+              </div>
+              <strong id="lab-budget">0 / 6 items acquired</strong>
+            </div>
+
+            <div class="candidate-grid" id="candidate-grid"></div>
+
+            <div class="lab-actions">
+              <button class="action-button" id="lab-acquire" type="button">Acquire recommended item</button>
+              <button class="action-button secondary" id="lab-reset" type="button">Reset simulation</button>
+            </div>
+          </div>
+
+          <div class="caveat-card">
+            <span>What to notice</span>
+            <h3>RankBALD concentrates evidence around close competitors.</h3>
+            <p>
+              A generic information criterion can favor an item that sharpens
+              several ability estimates. A ranking-aligned criterion instead
+              rewards an item that is informative for an unresolved pairwise
+              boundary, even when its global ability information is smaller.
+            </p>
+          </div>
+        </section>
+
+        <section aria-labelledby="results-title">
+          <div class="section-marker">05: Interactive paper results</div>
+
+          <h2 id="results-title">
+            Ranking alignment matters most when the evaluation budget is small.
+          </h2>
+
+          <p>
+            Choose a metric and an item budget. The values below reproduce the
+            paper's aggregate results across acquisition strategies. Coral marks
+            the best method for the selected setting.
+          </p>
+
+          <div class="results-explorer" id="results-explorer">
+            <div class="results-controls">
+              <div>
+                <label for="result-metric-select">Evaluation metric</label>
+                <select id="result-metric-select">
+                  <option value="validity">Validity: rank distance, lower is better</option>
+                  <option value="variance">Variance: total variation, lower is better</option>
+                  <option value="saturation">Saturation: rank correlation, higher is better</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Items per benchmark</label>
+                <div class="budget-buttons" aria-label="Evaluation budget">
+                  <button class="budget-button" type="button" data-result-budget="10">10</button>
+                  <button class="budget-button active" type="button" data-result-budget="50">50</button>
+                  <button class="budget-button" type="button" data-result-budget="100">100</button>
+                  <button class="budget-button" type="button" data-result-budget="500">500</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="result-list" id="result-list" aria-live="polite"></div>
+            <p class="results-note" id="results-note"></p>
+          </div>
+
+          <div class="metric-grid">
+            <article>
+              <h3>Validity</h3>
+              <p>
+                Average rank distance across capability-matched benchmark pairs.
+                Lower values mean more consistent model ordering.
+              </p>
+            </article>
+
+            <article>
+              <h3>Variance</h3>
+              <p>
+                Normalized total variation across checkpoint trajectories.
+                Lower values mean a smoother, more stable evaluation.
+              </p>
+            </article>
+
+            <article>
+              <h3>Saturation</h3>
+              <p>
+                Absolute Spearman correlation between checkpoint order and
+                estimated performance. Higher values mean the benchmark remains discriminative.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section aria-labelledby="evidence-title">
+          <div class="section-marker">06: Evidence across benchmarks</div>
+
+          <h2 id="evidence-title">
+            The pattern holds across English and African-language evaluation.
+          </h2>
+
+          <div class="paper-stat-grid">
+            <article class="paper-stat">
+              <b>2,802</b>
+              <strong>Checkpoint-benchmark combinations</strong>
+              <p>Across the primary Open LLM Leaderboard experiments.</p>
+            </article>
+
+            <article class="paper-stat">
+              <b>13M+</b>
+              <strong>Item-level evaluations</strong>
+              <p>Used in the controlled primary evaluation suite.</p>
+            </article>
+
+            <article class="paper-stat">
+              <b>6</b>
+              <strong>English benchmarks</strong>
+              <p>ARC, GSM8K, HellaSwag, MMLU, TruthfulQA, and WinoGrande.</p>
+            </article>
+
+            <article class="paper-stat">
+              <b>5</b>
+              <strong>African-language benchmarks</strong>
+              <p>AfriGSM, AfriMMLU, AfriXNLI, Belebele, and SIB.</p>
+            </article>
+          </div>
+
+          <p>
+            RankBALD achieves the strongest aggregate validity, lowest variance,
+            and fastest saturation. In the primary experiments, ranking stability
+            improves early, around 50 selected items. The AfroBench adaptation
+            shows the same overall pattern in multilingual and resource-constrained settings.
+          </p>
+
+          <div class="definition-card">
+            <span class="definition-label">At 100 items</span>
+            <p>
+              RankBALD records validity 24.23, variance 5.81 in the main table,
+              and saturation 0.861. The statistical analysis reports significant
+              improvements over Fluid Benchmarking for validity and variance at
+              this budget.
+            </p>
+          </div>
+        </section>
+
+        <section aria-labelledby="takeaway-title">
+          <div class="section-marker">07: What this changes</div>
+
+          <h2 id="takeaway-title">
+            Better evaluation can come from changing what we ask each item to teach us.
+          </h2>
+
+          <p>
+            RankBALD does not modify the IRT response model or the posterior
+            inference procedure. It changes the acquisition objective so the
+            selected items serve the actual downstream decision: recovering a
+            reliable ordering of language models under a limited budget.
+          </p>
+
+          <div class="rank-grid">
+            <article class="rank-card">
+              <strong>For leaderboard design</strong>
+              <p>
+                Spend fewer evaluations on comparisons whose order is already
+                clear, and more on items that distinguish close competitors.
+              </p>
+            </article>
+
+            <article class="rank-card">
+              <strong>For evaluation research</strong>
+              <p>
+                Define acquisition utility from the decision the benchmark must
+                support, rather than treating uncertainty reduction as universally interchangeable.
+              </p>
+            </article>
+          </div>
+
+          <div class="caveat-card">
+            <span>Scope</span>
+            <h3>The method depends on a calibrated probabilistic measurement model.</h3>
+            <p>
+              The study uses fixed item parameters in a 2PL IRT framework and a
+              Laplace approximation for posterior ability uncertainty. Future work
+              can investigate richer response models and even stronger focus on
+              closely competing systems.
+            </p>
+          </div>
+        </section>
+
+        <section class="paper-section" aria-labelledby="paper-three-title">
+          <div class="paper-number">Paper behind this essay</div>
+          <h2 id="paper-three-title">RankBALD: Ranking-Aligned Active Evaluation for Language Models</h2>
+          <p>
+            Bonaventure F. P. Dossou and Jackie Chi Kit Cheung. Conference on
+            Language Modeling, 2026.
+          </p>
+          <div class="paper-actions">
+            <a class="primary-link" href="https://openreview.net/forum?id=WGF7BPL7WF">Paper</a>
+            <a href="https://github.com/bonaventuredossou/al_rankbald">Code</a>
+            <a href="../../index.html#publications">Publications</a>
+            <a href="../index.html">All essays</a>
+          </div>
+        </section>
+
+        <nav class="next-essay" aria-label="Series navigation">
+          <div>
+            <span>Return to the beginning</span>
+            <small>Active Learning Under Real Constraints, Part I</small>
+          </div>
+          <div>
+            <h2>Active Learning Saves Labels. But What About Compute?</h2>
+            <p>Uncertainty, acquisition, and the cost of repeated model updates.</p>
+          </div>
+          <a href="../active-learning-and-compute/index.html">Read first essay</a>
+        </nav>
+      </div>
+    </article>
+  </main>
+
+  <footer class="blog-footer article-footer">
+    <span>&copy; Bonaventure F. P. Dossou</span>
+    <div class="footer-links">
+      <a href="../index.html">All essays</a>
+      <a href="../../index.html#top">Main website</a>
+      <a href="https://scholar.google.com/citations?user=2J581k0AAAAJ&amp;hl=en">Google Scholar</a>
+      <a href="https://github.com/bonaventuredossou">GitHub</a>
+      <a href="https://www.linkedin.com/in/bonaventuredossou/">LinkedIn</a>
+      <a href="mailto:bonaventure.dossou@mila.quebec">Email</a>
+    </div>
+  </footer>
+
+  <script src="../assets/blog.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      const byId = (id) => document.getElementById(id);
+      const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
+
+      function normalCDF(value) {
+        const sign = value < 0 ? -1 : 1;
+        const x = Math.abs(value) / Math.sqrt(2);
+        const t = 1 / (1 + 0.3275911 * x);
+        const a1 = 0.254829592;
+        const a2 = -0.284496736;
+        const a3 = 1.421413741;
+        const a4 = -1.453152027;
+        const a5 = 1.061405429;
+        const erf = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+        return 0.5 * (1 + sign * erf);
+      }
+
+      function renderPosterior() {
+        const meanA = Number(byId("ability-a-slider").value);
+        const meanB = Number(byId("ability-b-slider").value);
+        const sigma = Number(byId("posterior-sigma-slider").value);
+        const differenceSigma = Math.sqrt(2) * sigma;
+        const probability = normalCDF((meanA - meanB) / differenceSigma);
+        const scale = (value) => (value + 2.25) / 4.5 * 100;
+
+        byId("ability-a-value").textContent = meanA.toFixed(2);
+        byId("ability-b-value").textContent = meanB.toFixed(2);
+        byId("posterior-sigma-value").textContent = sigma.toFixed(2);
+
+        [
+          { id: "posterior-band-a", mean: meanA },
+          { id: "posterior-band-b", mean: meanB }
+        ].forEach((item) => {
+          const lower = scale(item.mean - 2 * sigma);
+          const upper = scale(item.mean + 2 * sigma);
+          const node = byId(item.id);
+          node.style.left = `${clamp(lower, 0, 100)}%`;
+          node.style.width = `${clamp(upper, 0, 100) - clamp(lower, 0, 100)}%`;
+        });
+
+        const confidence = Math.max(probability, 1 - probability);
+        let state = "Uncertain boundary";
+        if (confidence >= 0.95) state = "Stable ordering";
+        else if (confidence >= 0.8) state = "Leaning, not settled";
+
+        byId("posterior-gap").textContent = Math.abs(meanA - meanB).toFixed(2);
+        byId("posterior-probability").textContent = `${(probability * 100).toFixed(1)}%`;
+        byId("posterior-state").textContent = state;
+      }
+
+      ["ability-a-slider", "ability-b-slider", "posterior-sigma-slider"].forEach((id) => {
+        byId(id).addEventListener("input", renderPosterior);
+      });
+
+      byId("posterior-close").addEventListener("click", () => {
+        byId("ability-a-slider").value = "0.35";
+        byId("ability-b-slider").value = "0.28";
+        byId("posterior-sigma-slider").value = "0.35";
+        renderPosterior();
+      });
+
+      byId("posterior-separate").addEventListener("click", () => {
+        byId("ability-a-slider").value = "1.05";
+        byId("ability-b-slider").value = "-0.55";
+        byId("posterior-sigma-slider").value = "0.20";
+        renderPosterior();
+      });
+
+      function logistic(value) {
+        return 1 / (1 + Math.exp(-value));
+      }
+
+      function renderIRT() {
+        const theta = Number(byId("irt-theta-slider").value);
+        const difficulty = Number(byId("irt-difficulty-slider").value);
+        const discrimination = Number(byId("irt-discrimination-slider").value);
+        const probability = logistic(discrimination * (theta - difficulty));
+        const information = discrimination * discrimination * probability * (1 - probability);
+        const xScale = (value) => 55 + (value + 2.5) / 5 * 635;
+        const yScale = (value) => 235 - value * 210;
+        const points = [];
+
+        for (let step = 0; step <= 100; step += 1) {
+          const ability = -2.5 + step / 100 * 5;
+          const response = logistic(discrimination * (ability - difficulty));
+          points.push(`${step === 0 ? "M" : "L"}${xScale(ability).toFixed(1)},${yScale(response).toFixed(1)}`);
+        }
+
+        byId("irt-curve").setAttribute("d", points.join(" "));
+        byId("irt-theta-line").setAttribute("x1", xScale(theta));
+        byId("irt-theta-line").setAttribute("x2", xScale(theta));
+        byId("irt-difficulty-line").setAttribute("x1", xScale(difficulty));
+        byId("irt-difficulty-line").setAttribute("x2", xScale(difficulty));
+        byId("irt-point").setAttribute("cx", xScale(theta));
+        byId("irt-point").setAttribute("cy", yScale(probability));
+
+        byId("irt-theta-value").textContent = theta.toFixed(1);
+        byId("irt-difficulty-value").textContent = difficulty.toFixed(1);
+        byId("irt-discrimination-value").textContent = discrimination.toFixed(1);
+        byId("irt-probability").textContent = `${(probability * 100).toFixed(1)}%`;
+        byId("irt-information").textContent = information.toFixed(3);
+
+        const distance = Math.abs(theta - difficulty);
+        byId("irt-interpretation").textContent = distance <= 0.3
+          ? "Well aligned"
+          : distance <= 1
+            ? "Partly aligned"
+            : "Too easy or difficult";
+      }
+
+      ["irt-theta-slider", "irt-difficulty-slider", "irt-discrimination-slider"].forEach((id) => {
+        byId(id).addEventListener("input", renderIRT);
+      });
+
+      let posteriorObservedOutcome = "none";
+
+      function normalPDF(value, mean, standardDeviation) {
+        const z = (value - mean) / standardDeviation;
+        return Math.exp(-0.5 * z * z) / (standardDeviation * Math.sqrt(2 * Math.PI));
+      }
+
+      function renderIRTPosterior() {
+        const priorMean = Number(byId("posterior-prior-mean-slider").value);
+        const priorSD = Number(byId("posterior-prior-sd-slider").value);
+        const difficulty = Number(byId("posterior-item-difficulty-slider").value);
+        const discrimination = Number(byId("posterior-item-discrimination-slider").value);
+        const stepSize = 0.025;
+        const samples = [];
+        let normalizer = 0;
+        let predictiveCorrect = 0;
+
+        for (let ability = -7; ability <= 7.0001; ability += stepSize) {
+          const prior = normalPDF(ability, priorMean, priorSD);
+          const correctProbability = logistic(discrimination * (ability - difficulty));
+          const likelihood = posteriorObservedOutcome === "1"
+            ? correctProbability
+            : posteriorObservedOutcome === "0"
+              ? 1 - correctProbability
+              : 1;
+          const unnormalizedPosterior = prior * likelihood;
+          samples.push({ ability, prior, correctProbability, likelihood, unnormalizedPosterior });
+          normalizer += unnormalizedPosterior * stepSize;
+          predictiveCorrect += prior * correctProbability * stepSize;
+        }
+
+        normalizer = Math.max(normalizer, 1e-12);
+        samples.forEach((sample) => {
+          sample.posterior = sample.unnormalizedPosterior / normalizer;
+        });
+
+        let posteriorMean = 0;
+        samples.forEach((sample) => {
+          posteriorMean += sample.ability * sample.posterior * stepSize;
+        });
+
+        let posteriorVariance = 0;
+        let informationGain = 0;
+        samples.forEach((sample) => {
+          posteriorVariance += Math.pow(sample.ability - posteriorMean, 2) * sample.posterior * stepSize;
+          if (sample.posterior > 1e-12 && sample.prior > 1e-12) {
+            informationGain += sample.posterior * Math.log(sample.posterior / sample.prior) * stepSize;
+          }
+        });
+        const posteriorSD = Math.sqrt(Math.max(0, posteriorVariance));
+        const visibleSamples = samples.filter((sample) => sample.ability >= -3 && sample.ability <= 3.0001);
+        const maximumDensity = Math.max(...visibleSamples.map((sample) => Math.max(sample.prior, sample.posterior)));
+        const xScale = (value) => 70 + (value + 3) / 6 * 650;
+        const likelihoodY = (value) => 150 - value * 108;
+        const densityY = (value) => 325 - value / maximumDensity * 110;
+        const priorPath = [];
+        const likelihoodPath = [];
+        const posteriorPath = [];
+
+        visibleSamples.forEach((sample, index) => {
+          const command = index === 0 ? "M" : "L";
+          const displayedLikelihood = posteriorObservedOutcome === "none"
+            ? sample.correctProbability
+            : sample.likelihood;
+          priorPath.push(`${command}${xScale(sample.ability).toFixed(1)},${densityY(sample.prior).toFixed(1)}`);
+          likelihoodPath.push(`${command}${xScale(sample.ability).toFixed(1)},${likelihoodY(displayedLikelihood).toFixed(1)}`);
+          posteriorPath.push(`${command}${xScale(sample.ability).toFixed(1)},${densityY(sample.posterior).toFixed(1)}`);
+        });
+
+        byId("posterior-prior-path").setAttribute("d", priorPath.join(" "));
+        byId("posterior-likelihood-path").setAttribute("d", likelihoodPath.join(" "));
+        byId("posterior-updated-path").setAttribute("d", posteriorPath.join(" "));
+
+        const difficultyX = xScale(difficulty);
+        const posteriorMeanX = xScale(posteriorMean);
+        byId("posterior-item-marker").setAttribute("x1", difficultyX);
+        byId("posterior-item-marker").setAttribute("x2", difficultyX);
+        byId("posterior-mean-marker").setAttribute("x1", posteriorMeanX);
+        byId("posterior-mean-marker").setAttribute("x2", posteriorMeanX);
+        byId("posterior-item-label").setAttribute("x", clamp(difficultyX + 8, 76, 620));
+        byId("posterior-mean-label").setAttribute("x", clamp(posteriorMeanX + 8, 76, 570));
+        byId("posterior-item-label").textContent = `item b = ${difficulty.toFixed(1)}`;
+        byId("posterior-mean-label").textContent = `posterior mean = ${posteriorMean.toFixed(2)}`;
+
+        byId("posterior-prior-mean-value").textContent = priorMean.toFixed(1);
+        byId("posterior-prior-sd-value").textContent = priorSD.toFixed(2);
+        byId("posterior-item-difficulty-value").textContent = difficulty.toFixed(1);
+        byId("posterior-item-discrimination-value").textContent = discrimination.toFixed(1);
+        byId("posterior-predictive-probability").textContent = `${(predictiveCorrect * 100).toFixed(1)}%`;
+        byId("posterior-prior-summary").textContent = `${priorMean.toFixed(2)} +/- ${priorSD.toFixed(2)}`;
+        byId("posterior-updated-summary").textContent = `${posteriorMean.toFixed(2)} +/- ${posteriorSD.toFixed(2)}`;
+        byId("posterior-information-gain").textContent = `${Math.max(0, informationGain).toFixed(3)} nats`;
+
+        let explanation = "No response is selected, so the posterior equals the prior. The yellow curve shows P(correct | theta) before an answer is observed.";
+        if (posteriorObservedOutcome === "1") {
+          explanation = `A correct answer favors ability values that make this response likely. The posterior mean moves from ${priorMean.toFixed(2)} to ${posteriorMean.toFixed(2)} and its uncertainty changes from ${priorSD.toFixed(2)} to ${posteriorSD.toFixed(2)}.`;
+        } else if (posteriorObservedOutcome === "0") {
+          explanation = `An incorrect answer favors lower ability values for this item. The posterior mean moves from ${priorMean.toFixed(2)} to ${posteriorMean.toFixed(2)} and its uncertainty changes from ${priorSD.toFixed(2)} to ${posteriorSD.toFixed(2)}.`;
+        }
+        byId("posterior-update-explanation").textContent = explanation;
+
+        document.querySelectorAll("[data-irt-outcome]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.irtOutcome === posteriorObservedOutcome);
+        });
+      }
+
+      [
+        "posterior-prior-mean-slider",
+        "posterior-prior-sd-slider",
+        "posterior-item-difficulty-slider",
+        "posterior-item-discrimination-slider"
+      ].forEach((id) => {
+        byId(id).addEventListener("input", renderIRTPosterior);
+      });
+
+      document.querySelectorAll("[data-irt-outcome]").forEach((button) => {
+        button.addEventListener("click", () => {
+          posteriorObservedOutcome = button.dataset.irtOutcome;
+          renderIRTPosterior();
+        });
+      });
+
+      const calibrationModels = [
+        { id: "M1", truth: -1.40 },
+        { id: "M2", truth: -0.85 },
+        { id: "M3", truth: -0.25 },
+        { id: "M4", truth: 0.25 },
+        { id: "M5", truth: 0.80 },
+        { id: "M6", truth: 1.40 }
+      ];
+
+      const calibrationItems = [
+        { id: "q1", difficulty: -1.45, discrimination: 1.8 },
+        { id: "q2", difficulty: -0.95, discrimination: 2.4 },
+        { id: "q3", difficulty: -0.45, discrimination: 0.8 },
+        { id: "q4", difficulty: -0.05, discrimination: 2.7 },
+        { id: "q5", difficulty: 0.30, discrimination: 1.2 },
+        { id: "q6", difficulty: 0.70, discrimination: 2.2 },
+        { id: "q7", difficulty: 1.05, discrimination: 0.7 },
+        { id: "q8", difficulty: 1.45, discrimination: 2.5 }
+      ];
+
+      const calibrationResponses = calibrationModels.map((model, modelIndex) => (
+        calibrationItems.map((item, itemIndex) => {
+          const probability = logistic(item.discrimination * (model.truth - item.difficulty));
+          const pseudoRandom = Math.abs(Math.sin((modelIndex + 1) * 19.17 + (itemIndex + 1) * 7.31)) % 1;
+          return pseudoRandom < probability ? 1 : 0;
+        })
+      ));
+
+      let calibrationTheta = [];
+      let calibrationDifficulty = [];
+      let calibrationLogDiscrimination = [];
+      let calibrationIteration = 0;
+      let calibrationStage = "responses";
+      let calibrationRevealTruth = false;
+
+      function calibrationLogLikelihood() {
+        let total = 0;
+        calibrationModels.forEach((model, modelIndex) => {
+          calibrationItems.forEach((item, itemIndex) => {
+            const discrimination = Math.exp(calibrationLogDiscrimination[itemIndex]);
+            const probability = clamp(
+              logistic(discrimination * (calibrationTheta[modelIndex] - calibrationDifficulty[itemIndex])),
+              1e-7,
+              1 - 1e-7
+            );
+            const response = calibrationResponses[modelIndex][itemIndex];
+            total += response * Math.log(probability) + (1 - response) * Math.log(1 - probability);
+          });
+        });
+        return total;
+      }
+
+      function runCalibrationStep() {
+        const thetaGradient = calibrationModels.map(() => 0);
+        const difficultyGradient = calibrationItems.map(() => 0);
+        const logDiscriminationGradient = calibrationItems.map(() => 0);
+
+        calibrationModels.forEach((model, modelIndex) => {
+          calibrationItems.forEach((item, itemIndex) => {
+            const discrimination = Math.exp(calibrationLogDiscrimination[itemIndex]);
+            const difference = calibrationTheta[modelIndex] - calibrationDifficulty[itemIndex];
+            const probability = logistic(discrimination * difference);
+            const error = calibrationResponses[modelIndex][itemIndex] - probability;
+            thetaGradient[modelIndex] += discrimination * error;
+            difficultyGradient[itemIndex] -= discrimination * error;
+            logDiscriminationGradient[itemIndex] += error * discrimination * difference;
+          });
+        });
+
+        calibrationTheta = calibrationTheta.map((value, index) => (
+          clamp(value + 0.22 * (thetaGradient[index] / calibrationItems.length - 0.04 * value), -2.5, 2.5)
+        ));
+        calibrationDifficulty = calibrationDifficulty.map((value, index) => (
+          clamp(value + 0.20 * (difficultyGradient[index] / calibrationModels.length - 0.04 * value), -2.5, 2.5)
+        ));
+        calibrationLogDiscrimination = calibrationLogDiscrimination.map((value, index) => (
+          clamp(value + 0.10 * (logDiscriminationGradient[index] / calibrationModels.length - 0.08 * value), Math.log(0.35), Math.log(3.2))
+        ));
+
+        const center = calibrationTheta.reduce((sum, value) => sum + value, 0) / calibrationTheta.length;
+        calibrationTheta = calibrationTheta.map((value) => value - center);
+        calibrationDifficulty = calibrationDifficulty.map((value) => clamp(value - center, -2.5, 2.5));
+        calibrationIteration += 1;
+      }
+
+      function estimateRow(label, value, detail, className, percentage) {
+        const row = document.createElement("div");
+        row.className = `estimate-row ${className}`;
+        row.innerHTML = `<div class="estimate-head"><strong>${label}</strong><span>${detail}</span></div><div class="estimate-track"><div class="estimate-fill" style="width:${clamp(percentage, 2, 100)}%"></div></div>`;
+        return row;
+      }
+
+      function renderResponseMatrix() {
+        const table = byId("response-matrix");
+        table.textContent = "";
+        const header = document.createElement("tr");
+        const corner = document.createElement("th");
+        corner.textContent = "Model";
+        header.appendChild(corner);
+        calibrationItems.forEach((item) => {
+          const cell = document.createElement("th");
+          cell.textContent = item.id;
+          header.appendChild(cell);
+        });
+        table.appendChild(header);
+
+        calibrationModels.forEach((model, modelIndex) => {
+          const row = document.createElement("tr");
+          const label = document.createElement("th");
+          label.textContent = model.id;
+          row.appendChild(label);
+          calibrationItems.forEach((item, itemIndex) => {
+            const response = calibrationResponses[modelIndex][itemIndex];
+            const cell = document.createElement("td");
+            cell.className = `response-cell ${response ? "correct" : "incorrect"}`;
+            cell.textContent = response ? "1" : "0";
+            cell.setAttribute("aria-label", `${model.id} on ${item.id}: ${response ? "correct" : "incorrect"}`);
+            row.appendChild(cell);
+          });
+          table.appendChild(row);
+        });
+      }
+
+      function renderCalibration() {
+        const root = byId("estimate-list");
+        root.textContent = "";
+
+        const stageNotes = {
+          responses: "Stage 1: the evaluator observes only correctness. Rows are models, columns are questions, and the latent parameters are still unknown.",
+          items: "Stage 2: joint likelihood fitting estimates where each question lies on the ability scale and how sharply it separates models.",
+          abilities: "Stage 3: the same fit places every model on the latent ability scale. Sorting the estimates produces the recovered model order."
+        };
+        byId("calibration-note").textContent = stageNotes[calibrationStage];
+
+        if (calibrationStage === "responses") {
+          byId("estimate-panel-title").textContent = "Observed pool summary";
+          byId("estimate-panel-description").textContent = "Raw accuracy gives a first ordering, but it does not account for item difficulty or discrimination.";
+          calibrationModels.forEach((model, modelIndex) => {
+            const correct = calibrationResponses[modelIndex].reduce((sum, value) => sum + value, 0);
+            const truth = calibrationRevealTruth ? ` | generating theta ${model.truth.toFixed(2)}` : "";
+            root.appendChild(estimateRow(model.id, correct, `${correct} / ${calibrationItems.length} correct${truth}`, "ability", correct / calibrationItems.length * 100));
+          });
+        } else if (calibrationStage === "items") {
+          byId("estimate-panel-title").textContent = "Estimated item parameters";
+          byId("estimate-panel-description").textContent = "Difficulty is the curve midpoint. Discrimination is the fitted slope and must remain positive.";
+          calibrationItems.forEach((item, itemIndex) => {
+            const difficulty = calibrationDifficulty[itemIndex];
+            const discrimination = Math.exp(calibrationLogDiscrimination[itemIndex]);
+            const truth = calibrationRevealTruth
+              ? ` | true b ${item.difficulty.toFixed(2)}, a ${item.discrimination.toFixed(2)}`
+              : "";
+            root.appendChild(estimateRow(item.id, discrimination, `b ${difficulty.toFixed(2)} | a ${discrimination.toFixed(2)}${truth}`, "discrimination", discrimination / 3.2 * 100));
+          });
+        } else {
+          byId("estimate-panel-title").textContent = "Recovered model abilities";
+          byId("estimate-panel-description").textContent = "Ability increases when a model answers difficult, discriminative questions correctly.";
+          [...calibrationModels]
+            .map((model, index) => ({ ...model, estimate: calibrationTheta[index] }))
+            .sort((a, b) => b.estimate - a.estimate)
+            .forEach((model, rank) => {
+              const truth = calibrationRevealTruth ? ` | generating theta ${model.truth.toFixed(2)}` : "";
+              root.appendChild(estimateRow(`#${rank + 1} ${model.id}`, model.estimate, `theta ${model.estimate.toFixed(2)}${truth}`, "ability", (model.estimate + 2.5) / 5 * 100));
+            });
+        }
+
+        const ranking = [...calibrationModels]
+          .map((model, index) => ({ id: model.id, estimate: calibrationTheta[index] }))
+          .sort((a, b) => b.estimate - a.estimate)
+          .map((model) => model.id)
+          .join(" > ");
+
+        byId("calibration-iteration").textContent = String(calibrationIteration);
+        byId("calibration-likelihood").textContent = calibrationLogLikelihood().toFixed(2);
+        byId("calibration-ranking").textContent = calibrationIteration === 0
+          ? "M1 = M2 = M3 = M4 = M5 = M6"
+          : ranking;
+        byId("calibration-reveal-button").textContent = calibrationRevealTruth
+          ? "Hide generating parameters"
+          : "Reveal generating parameters";
+        document.querySelectorAll("[data-calibration-stage]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.calibrationStage === calibrationStage);
+        });
+      }
+
+      function resetCalibration() {
+        calibrationTheta = calibrationModels.map(() => 0);
+        calibrationDifficulty = calibrationItems.map(() => 0);
+        calibrationLogDiscrimination = calibrationItems.map(() => 0);
+        calibrationIteration = 0;
+        calibrationStage = "responses";
+        calibrationRevealTruth = false;
+        renderCalibration();
+      }
+
+      document.querySelectorAll("[data-calibration-stage]").forEach((button) => {
+        button.addEventListener("click", () => {
+          calibrationStage = button.dataset.calibrationStage;
+          renderCalibration();
+        });
+      });
+
+      byId("calibration-step-button").addEventListener("click", () => {
+        runCalibrationStep();
+        if (calibrationIteration === 1) calibrationStage = "items";
+        renderCalibration();
+      });
+
+      byId("calibration-run-button").addEventListener("click", () => {
+        for (let step = 0; step < 25; step += 1) runCalibrationStep();
+        calibrationStage = "abilities";
+        renderCalibration();
+      });
+
+      byId("calibration-reveal-button").addEventListener("click", () => {
+        calibrationRevealTruth = !calibrationRevealTruth;
+        renderCalibration();
+      });
+
+      byId("calibration-reset-button").addEventListener("click", resetCalibration);
+
+      const methodDetails = {
+        bald: {
+          title: "BALD: learn about latent ability",
+          body: "BALD maximizes mutual information between a candidate correctness response and a model's latent ability. It isolates epistemic disagreement, but the target remains a scalar ability parameter.",
+          addition: "Next, DiffBALD asks whether the item's difficulty is aligned with the posterior ability region."
+        },
+        diff: {
+          title: "DiffBALD: prefer difficulty-aligned items",
+          body: "DiffBALD multiplies the BALD score by a smooth kernel centered at item difficulty. Items far from the posterior ability region are downweighted because they are likely to be uniformly easy or uniformly hard.",
+          addition: "Next, VarBALD adds an explicit one-step posterior variance-reduction term."
+        },
+        var: {
+          title: "VarBALD: reward expected variance reduction",
+          body: "VarBALD augments DiffBALD with the expected fractional reduction in posterior ability variance. It still treats ability estimation as the main information target.",
+          addition: "RankBALD makes the central shift: the information target becomes pairwise ordering."
+        },
+        rank: {
+          title: "RankBALD: learn which model outranks which",
+          body: "RankBALD maximizes mutual information between candidate joint responses and binary pairwise ordering variables. Difficulty alignment and rank-distance weighting focus the score on consequential, nearby comparisons.",
+          addition: "This is objective alignment: acquisition is defined by the ranking decision itself."
+        }
+      };
+
+      const comparisonItems = [
+        { id: "q1", difficulty: -1.40, discrimination: 2.8 },
+        { id: "q2", difficulty: -0.65, discrimination: 2.5 },
+        { id: "q3", difficulty: -0.10, discrimination: 1.7 },
+        { id: "q4", difficulty: 0.32, discrimination: 1.8 },
+        { id: "q5", difficulty: 0.72, discrimination: 2.2 },
+        { id: "q6", difficulty: 1.08, discrimination: 2.7 },
+        { id: "q7", difficulty: 1.55, discrimination: 1.6 }
+      ];
+
+      const comparisonScenarios = {
+        close: {
+          label: "Close race",
+          note: "Models B and C occupy almost the same ability region. Their pairwise ordering is uncertain even though A and D are well separated.",
+          models: [
+            { id: "D", mean: -0.62, sigma: 0.25 },
+            { id: "C", mean: 0.27, sigma: 0.43 },
+            { id: "B", mean: 0.36, sigma: 0.42 },
+            { id: "A", mean: 1.08, sigma: 0.24 }
+          ]
+        },
+        separated: {
+          label: "Separated models",
+          note: "The posterior means are well separated and each ordering is already confident. Ranking-specific utility becomes more diffuse.",
+          models: [
+            { id: "D", mean: -1.05, sigma: 0.17 },
+            { id: "C", mean: -0.28, sigma: 0.19 },
+            { id: "B", mean: 0.55, sigma: 0.18 },
+            { id: "A", mean: 1.32, sigma: 0.16 }
+          ]
+        }
+      };
+
+      const comparisonMethodInfo = {
+        bald: {
+          name: "BALD",
+          target: "Ability information",
+          result: "Reduces epistemic uncertainty in scalar abilities.",
+          limitation: "Limitation: it does not explicitly reject difficulty-misaligned items or ask whether the final ordering changes."
+        },
+        diff: {
+          name: "DiffBALD",
+          target: "+ difficulty alignment",
+          result: "Downweights questions far from posterior ability regions.",
+          limitation: "What it solves: avoids many uniformly easy or hard items. Remaining limitation: the information target is still scalar ability."
+        },
+        var: {
+          name: "VarBALD",
+          target: "+ variance reduction",
+          result: "Rewards expected one-step shrinkage of ability variance.",
+          limitation: "What it solves: explicitly prefers stable ability estimates. Remaining limitation: variance reduction need not resolve a pairwise boundary."
+        },
+        rank: {
+          name: "RankBALD",
+          target: "Pairwise ordering information",
+          result: "Targets responses that can resolve uncertain nearby orderings.",
+          limitation: "What it solves: aligns acquisition with the ranking decision rather than treating ranking as a by-product of ability estimation."
+        }
+      };
+
+      let comparisonScenario = "close";
+      let activeComparisonMethod = "bald";
+      let comparisonModels = comparisonScenarios.close.models.map((model) => ({ ...model }));
+
+      function comparisonScores(method, models) {
+        return comparisonItems.map((item) => {
+          const perModel = models.map((model) => {
+            const probability = logistic(item.discrimination * (model.mean - item.difficulty));
+            const information = item.discrimination * item.discrimination * probability * (1 - probability);
+            const posteriorSensitivity = model.sigma * model.sigma * information;
+            const alignment = Math.exp(-0.5 * Math.pow((item.difficulty - model.mean) / Math.max(0.22, model.sigma * 1.8), 2));
+            const reduction = information / (1 / (model.sigma * model.sigma) + information);
+            return { posteriorSensitivity, alignment, reduction };
+          });
+
+          const bald = perModel.reduce((sum, value) => sum + value.posteriorSensitivity, 0) / models.length;
+          const meanAlignment = perModel.reduce((sum, value) => sum + value.alignment, 0) / models.length;
+          const meanReduction = perModel.reduce((sum, value) => sum + value.reduction, 0) / models.length;
+          const diff = bald * (0.25 + 0.75 * meanAlignment);
+          const variance = diff * (1 + 1.8 * meanReduction);
+
+          const ordered = [...models].sort((a, b) => b.mean - a.mean);
+          let rank = 0;
+          let rankWeight = 0;
+          for (let index = 0; index < ordered.length - 1; index += 1) {
+            const first = ordered[index];
+            const second = ordered[index + 1];
+            const spread = Math.sqrt(first.sigma * first.sigma + second.sigma * second.sigma);
+            const orderProbability = normalCDF((first.mean - second.mean) / spread);
+            const orderUncertainty = 1 - Math.abs(orderProbability - 0.5) * 2;
+            const midpoint = (first.mean + second.mean) / 2;
+            const pairScale = Math.max(0.18, (first.sigma + second.sigma) / 2);
+            const pairAlignment = Math.exp(-0.5 * Math.pow((item.difficulty - midpoint) / pairScale, 2));
+            const weight = 1 / (index + 1);
+            rank += weight * orderUncertainty * pairAlignment * item.discrimination;
+            rankWeight += weight;
+          }
+
+          return {
+            id: item.id,
+            bald,
+            diff,
+            var: variance,
+            rank: rank / rankWeight
+          }[method];
+        });
+      }
+
+      function renderComparisonAxis(models) {
+        const axis = byId("comparison-axis");
+        axis.textContent = "";
+        const toPercent = (value) => clamp((value + 2) / 4 * 100, 0, 100);
+
+        models.forEach((model) => {
+          const band = document.createElement("div");
+          band.className = "axis-model";
+          band.style.left = `${toPercent(model.mean)}%`;
+          band.style.width = `${clamp(model.sigma * 100, 10, 46)}%`;
+          band.innerHTML = `<span>Model ${model.id}</span>`;
+          axis.appendChild(band);
+        });
+
+        comparisonItems.forEach((item) => {
+          const marker = document.createElement("div");
+          marker.className = "axis-item";
+          marker.style.left = `${toPercent(item.difficulty)}%`;
+          marker.innerHTML = `<span>${item.id}</span>`;
+          axis.appendChild(marker);
+        });
+      }
+
+      function renderComparisonPosteriorChart(models) {
+        const modelB = models.find((model) => model.id === "B");
+        const modelC = models.find((model) => model.id === "C");
+        const xScale = (value) => 70 + (value + 2) / 4 * 650;
+        const densities = [];
+
+        for (let index = 0; index <= 200; index += 1) {
+          const ability = -2 + index / 200 * 4;
+          densities.push({
+            ability,
+            b: normalPDF(ability, modelB.mean, modelB.sigma),
+            c: normalPDF(ability, modelC.mean, modelC.sigma)
+          });
+        }
+
+        const maximumDensity = Math.max(...densities.map((sample) => Math.max(sample.b, sample.c)));
+        const yScale = (density) => 205 - density / maximumDensity * 145;
+        const pathFor = (key) => {
+          const points = densities.map((sample, index) => `${index === 0 ? "M" : "L"}${xScale(sample.ability).toFixed(1)},${yScale(sample[key]).toFixed(1)}`);
+          points.push(`L${xScale(2).toFixed(1)},205`, `L${xScale(-2).toFixed(1)},205`, "Z");
+          return points.join(" ");
+        };
+
+        byId("comparison-posterior-b-path").setAttribute("d", pathFor("b"));
+        byId("comparison-posterior-c-path").setAttribute("d", pathFor("c"));
+        const modelBX = xScale(modelB.mean);
+        const modelCX = xScale(modelC.mean);
+        byId("comparison-b-mean-line").setAttribute("x1", modelBX);
+        byId("comparison-b-mean-line").setAttribute("x2", modelBX);
+        byId("comparison-c-mean-line").setAttribute("x1", modelCX);
+        byId("comparison-c-mean-line").setAttribute("x2", modelCX);
+
+        const itemRoot = byId("comparison-posterior-items");
+        itemRoot.textContent = "";
+        comparisonItems.forEach((item, index) => {
+          const x = xScale(item.difficulty);
+          const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          line.setAttribute("x1", x);
+          line.setAttribute("x2", x);
+          line.setAttribute("y1", "42");
+          line.setAttribute("y2", "205");
+          line.setAttribute("stroke", "rgba(143,210,189,.34)");
+          line.setAttribute("stroke-width", "1.5");
+          const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          label.setAttribute("x", x);
+          label.setAttribute("y", String(48 + index % 2 * 15));
+          label.setAttribute("text-anchor", "middle");
+          label.textContent = item.id;
+          itemRoot.append(line, label);
+        });
+      }
+
+      function syncComparisonControls() {
+        const modelB = comparisonModels.find((model) => model.id === "B");
+        const modelC = comparisonModels.find((model) => model.id === "C");
+        byId("comparison-b-mean-slider").value = modelB.mean;
+        byId("comparison-b-sigma-slider").value = modelB.sigma;
+        byId("comparison-c-mean-slider").value = modelC.mean;
+        byId("comparison-c-sigma-slider").value = modelC.sigma;
+      }
+
+      function loadComparisonScenario(key) {
+        comparisonScenario = key;
+        comparisonModels = comparisonScenarios[key].models.map((model) => ({ ...model }));
+        syncComparisonControls();
+        renderMethodComparison();
+      }
+
+      function renderMethodComparison() {
+        const modelB = comparisonModels.find((model) => model.id === "B");
+        const modelC = comparisonModels.find((model) => model.id === "C");
+        const root = byId("comparison-table");
+        root.textContent = "";
+        renderComparisonAxis(comparisonModels);
+        renderComparisonPosteriorChart(comparisonModels);
+
+        const spread = Math.sqrt(modelB.sigma * modelB.sigma + modelC.sigma * modelC.sigma);
+        const orderProbability = normalCDF((modelB.mean - modelC.mean) / spread);
+        const confidence = Math.max(orderProbability, 1 - orderProbability);
+        const orderState = confidence < 0.65
+          ? "Uncertain boundary"
+          : confidence < 0.9
+            ? "Leaning, not settled"
+            : "Stable ordering";
+        byId("comparison-posterior-gap").textContent = Math.abs(modelB.mean - modelC.mean).toFixed(2);
+        byId("comparison-order-probability").textContent = `${(orderProbability * 100).toFixed(1)}%`;
+        byId("comparison-order-state").textContent = orderState;
+        byId("comparison-b-mean-value").textContent = modelB.mean.toFixed(2);
+        byId("comparison-b-sigma-value").textContent = modelB.sigma.toFixed(2);
+        byId("comparison-c-mean-value").textContent = modelC.mean.toFixed(2);
+        byId("comparison-c-sigma-value").textContent = modelC.sigma.toFixed(2);
+
+        byId("comparison-scene-note").textContent = comparisonScenario === "custom"
+          ? `Custom posterior: P(B outranks C) is ${(orderProbability * 100).toFixed(1)}%. The score rows below have been recomputed from this geometry.`
+          : comparisonScenarios[comparisonScenario].note;
+
+        ["bald", "diff", "var", "rank"].forEach((method) => {
+          const scores = comparisonScores(method, comparisonModels);
+          const maximum = Math.max(...scores, 1e-8);
+          const recommendedIndex = scores.indexOf(maximum);
+          const info = comparisonMethodInfo[method];
+          const row = document.createElement("div");
+          row.className = `comparison-row${method === activeComparisonMethod ? " active" : ""}`;
+
+          const label = document.createElement("div");
+          label.className = "comparison-method";
+          label.innerHTML = `<strong>${info.name}</strong><span>${info.target}</span>`;
+
+          const scoreRoot = document.createElement("div");
+          scoreRoot.className = "comparison-scores";
+          scores.forEach((score, index) => {
+            const cell = document.createElement("div");
+            cell.className = `comparison-score${index === recommendedIndex ? " recommended" : ""}`;
+            cell.innerHTML = `<span>${comparisonItems[index].id}</span><div class="comparison-score-track"><div class="comparison-score-fill" style="height:${Math.max(4, score / maximum * 100)}%"></div></div>`;
+            scoreRoot.appendChild(cell);
+          });
+
+          const result = document.createElement("div");
+          result.className = "comparison-result";
+          result.innerHTML = `<strong>Selects ${comparisonItems[recommendedIndex].id}</strong>${info.result}`;
+          row.append(label, scoreRoot, result);
+          root.appendChild(row);
+        });
+
+        const activeInfo = comparisonMethodInfo[activeComparisonMethod];
+        byId("comparison-explanation").innerHTML = `<strong>${activeInfo.name}:</strong> ${activeInfo.limitation}`;
+        document.querySelectorAll("[data-comparison-scenario]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.comparisonScenario === comparisonScenario);
+        });
+      }
+
+      function renderMethod(method) {
+        const item = methodDetails[method];
+        activeComparisonMethod = method;
+        byId("method-detail").innerHTML = `<h3>${item.title}</h3><p>${item.body}</p><p><strong>${item.addition}</strong></p>`;
+        document.querySelectorAll("[data-method]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.method === method);
+        });
+        renderMethodComparison();
+      }
+
+      document.querySelectorAll("[data-method]").forEach((button) => {
+        button.addEventListener("click", () => renderMethod(button.dataset.method));
+      });
+
+      document.querySelectorAll("[data-comparison-scenario]").forEach((button) => {
+        button.addEventListener("click", () => {
+          loadComparisonScenario(button.dataset.comparisonScenario);
+        });
+      });
+
+      [
+        ["comparison-b-mean-slider", "B", "mean"],
+        ["comparison-b-sigma-slider", "B", "sigma"],
+        ["comparison-c-mean-slider", "C", "mean"],
+        ["comparison-c-sigma-slider", "C", "sigma"]
+      ].forEach(([id, modelId, property]) => {
+        byId(id).addEventListener("input", () => {
+          const model = comparisonModels.find((candidate) => candidate.id === modelId);
+          model[property] = Number(byId(id).value);
+          comparisonScenario = "custom";
+          renderMethodComparison();
+        });
+      });
+
+      const initialModels = [
+        { id: "A", mean: 1.05, sigma: 0.30, truth: 1.18 },
+        { id: "B", mean: 0.42, sigma: 0.38, truth: 0.58 },
+        { id: "C", mean: 0.34, sigma: 0.39, truth: 0.45 },
+        { id: "D", mean: -0.48, sigma: 0.31, truth: -0.35 }
+      ];
+
+      const labItems = [
+        { id: "q1", difficulty: -1.25, discrimination: 1.1 },
+        { id: "q2", difficulty: -0.55, discrimination: 1.8 },
+        { id: "q3", difficulty: 0.05, discrimination: 1.4 },
+        { id: "q4", difficulty: 0.35, discrimination: 2.4 },
+        { id: "q5", difficulty: 0.55, discrimination: 2.0 },
+        { id: "q6", difficulty: 0.95, discrimination: 1.5 },
+        { id: "q7", difficulty: 1.30, discrimination: 2.2 },
+        { id: "q8", difficulty: 1.75, discrimination: 1.3 }
+      ];
+
+      let labStrategy = "bald";
+      let labModels = [];
+      let acquiredItems = new Set();
+      let labRound = 0;
+
+      function pairProbability(first, second) {
+        const spread = Math.sqrt(first.sigma * first.sigma + second.sigma * second.sigma);
+        return normalCDF((first.mean - second.mean) / spread);
+      }
+
+      function abilityScore(item) {
+        return labModels.reduce((sum, model) => {
+          const probability = logistic(item.discrimination * (model.mean - item.difficulty));
+          return sum + model.sigma * item.discrimination * item.discrimination * probability * (1 - probability);
+        }, 0) / labModels.length;
+      }
+
+      function rankingScore(item) {
+        let weightedScore = 0;
+        let totalWeight = 0;
+        const ordered = [...labModels].sort((a, b) => b.mean - a.mean);
+
+        for (let index = 0; index < ordered.length - 1; index += 1) {
+          const first = ordered[index];
+          const second = ordered[index + 1];
+          const confidence = Math.max(pairProbability(first, second), 1 - pairProbability(first, second));
+          const uncertainty = 1 - Math.abs(confidence - 0.5) * 2;
+          const midpoint = (first.mean + second.mean) / 2;
+          const scale = Math.max(0.18, (first.sigma + second.sigma) / 2);
+          const alignment = Math.exp(-0.5 * Math.pow((item.difficulty - midpoint) / scale, 2));
+          const weight = 1 / (index + 1);
+          weightedScore += weight * uncertainty * alignment * item.discrimination;
+          totalWeight += weight;
+        }
+
+        return weightedScore / totalWeight;
+      }
+
+      function currentScores() {
+        return labItems
+          .filter((item) => !acquiredItems.has(item.id))
+          .map((item) => ({
+            ...item,
+            score: labStrategy === "rank" ? rankingScore(item) : abilityScore(item)
+          }))
+          .sort((a, b) => b.score - a.score);
+      }
+
+      function renderLab() {
+        const ordered = [...labModels].sort((a, b) => b.mean - a.mean);
+        const abilityRoot = byId("ability-board");
+        const pairRoot = byId("pairwise-board");
+        const candidateRoot = byId("candidate-grid");
+        const scores = currentScores();
+        const recommended = scores[0] || null;
+        const maximumScore = scores.length ? scores[0].score : 1;
+
+        abilityRoot.textContent = "";
+        ordered.forEach((model, index) => {
+          const card = document.createElement("article");
+          card.className = `ability-card${index === 0 ? " top" : ""}`;
+          card.innerHTML = `<strong>#${index + 1} Model ${model.id}</strong><span>ability ${model.mean.toFixed(2)} +/- ${model.sigma.toFixed(2)}</span><div class="ability-track"><div class="ability-fill" style="width:${clamp((model.mean + 1.5) / 3 * 100, 4, 100)}%"></div></div>`;
+          abilityRoot.appendChild(card);
+        });
+
+        pairRoot.textContent = "";
+        for (let index = 0; index < ordered.length - 1; index += 1) {
+          const first = ordered[index];
+          const second = ordered[index + 1];
+          const probability = pairProbability(first, second);
+          const card = document.createElement("div");
+          card.className = "pairwise-card";
+          card.innerHTML = `<span>Adjacent boundary</span><strong>P(${first.id} &gt; ${second.id}) = ${(probability * 100).toFixed(1)}%</strong>`;
+          pairRoot.appendChild(card);
+        }
+
+        candidateRoot.textContent = "";
+        labItems.forEach((item) => {
+          const scoreEntry = scores.find((candidate) => candidate.id === item.id);
+          const isAcquired = acquiredItems.has(item.id);
+          const isRecommended = recommended && recommended.id === item.id;
+          const score = scoreEntry ? scoreEntry.score : 0;
+          const card = document.createElement("article");
+          card.className = `candidate-card${isRecommended ? " recommended" : ""}${isAcquired ? " acquired" : ""}`;
+          card.innerHTML = `<strong>${item.id}${isAcquired ? " acquired" : isRecommended ? " next" : ""}</strong><span>difficulty b = ${item.difficulty.toFixed(2)}</span><span>discrimination a = ${item.discrimination.toFixed(1)}</span><span>acquisition score = ${score.toFixed(3)}</span><div class="score-track"><div class="score-fill" style="width:${maximumScore > 0 ? score / maximumScore * 100 : 0}%"></div></div>`;
+          candidateRoot.appendChild(card);
+        });
+
+        const closest = ordered
+          .slice(0, -1)
+          .map((model, index) => ({
+            first: model,
+            second: ordered[index + 1],
+            gap: Math.abs(model.mean - ordered[index + 1].mean)
+          }))
+          .sort((a, b) => a.gap - b.gap)[0];
+
+        byId("lab-message").textContent = labStrategy === "rank"
+          ? `RankBALD proxy targets the uncertain ${closest.first.id} versus ${closest.second.id} boundary and favors items near that pair's ability region.`
+          : "BALD proxy rewards expected information about the four scalar ability estimates, averaged across models.";
+        byId("lab-budget").textContent = `${labRound} / 6 items acquired`;
+        byId("lab-acquire").disabled = labRound >= 6 || !recommended;
+        byId("lab-acquire").textContent = labRound >= 6 || !recommended
+          ? "Simulation complete"
+          : `Acquire ${recommended.id}`;
+
+        document.querySelectorAll("[data-lab-strategy]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.labStrategy === labStrategy);
+        });
+      }
+
+      function resetLab() {
+        labModels = initialModels.map((model) => ({ ...model }));
+        acquiredItems = new Set();
+        labRound = 0;
+        renderLab();
+      }
+
+      function acquireLabItem() {
+        const recommended = currentScores()[0];
+        if (!recommended || labRound >= 6) return;
+
+        acquiredItems.add(recommended.id);
+        labRound += 1;
+
+        labModels.forEach((model, modelIndex) => {
+          const probability = logistic(recommended.discrimination * (model.truth - recommended.difficulty));
+          const deterministicDraw = ((labRound * 37 + modelIndex * 23 + recommended.id.charCodeAt(1) * 11) % 100) / 100;
+          const response = deterministicDraw < probability ? 1 : 0;
+          const predicted = logistic(recommended.discrimination * (model.mean - recommended.difficulty));
+          const learningRate = 0.12 * model.sigma;
+          model.mean += learningRate * recommended.discrimination * (response - predicted);
+          const information = recommended.discrimination * recommended.discrimination * predicted * (1 - predicted);
+          model.sigma = Math.max(0.09, 1 / Math.sqrt(1 / (model.sigma * model.sigma) + information));
+        });
+
+        renderLab();
+      }
+
+      document.querySelectorAll("[data-lab-strategy]").forEach((button) => {
+        button.addEventListener("click", () => {
+          labStrategy = button.dataset.labStrategy;
+          resetLab();
+        });
+      });
+
+      byId("lab-acquire").addEventListener("click", acquireLabItem);
+      byId("lab-reset").addEventListener("click", resetLab);
+
+      const resultData = {
+        validity: {
+          direction: "lower",
+          label: "rank distance",
+          values: {
+            "Random-IRT": [59.45, 51.52, 45.67, 36.09],
+            "Fluid": [46.89, 36.91, 36.25, 34.92],
+            "BALD": [49.36, 38.25, 36.55, 34.94],
+            "VarBALD": [47.56, 37.22, 36.43, 34.77],
+            "DiffBALD": [48.88, 37.51, 36.37, 34.83],
+            "RankBALD": [35.30, 29.10, 24.23, 22.45]
+          }
+        },
+        variance: {
+          direction: "lower",
+          label: "total variation",
+          values: {
+            "Random-IRT": [19.38, 16.00, 13.77, 12.50],
+            "Fluid": [14.30, 6.95, 6.06, 4.94],
+            "BALD": [23.64, 9.66, 8.09, 6.25],
+            "VarBALD": [14.96, 8.48, 6.82, 5.02],
+            "DiffBALD": [15.25, 8.34, 6.88, 5.03],
+            "RankBALD": [12.42, 6.09, 5.81, 3.98]
+          }
+        },
+        saturation: {
+          direction: "higher",
+          label: "rank correlation",
+          values: {
+            "Random-IRT": [0.428, 0.642, 0.702, 0.836],
+            "Fluid": [0.708, 0.831, 0.850, 0.875],
+            "BALD": [0.538, 0.779, 0.818, 0.861],
+            "VarBALD": [0.650, 0.811, 0.837, 0.872],
+            "DiffBALD": [0.657, 0.809, 0.841, 0.873],
+            "RankBALD": [0.728, 0.849, 0.861, 0.877]
+          }
+        }
+      };
+
+      const budgets = [10, 50, 100, 500];
+      let activeBudget = 50;
+
+      function renderResults() {
+        const metricKey = byId("result-metric-select").value;
+        const metric = resultData[metricKey];
+        const budgetIndex = budgets.indexOf(activeBudget);
+        const entries = Object.entries(metric.values).map(([method, values]) => ({
+          method,
+          value: values[budgetIndex]
+        }));
+        const bestValue = metric.direction === "lower"
+          ? Math.min(...entries.map((entry) => entry.value))
+          : Math.max(...entries.map((entry) => entry.value));
+        const maximum = Math.max(...entries.map((entry) => entry.value));
+        const minimum = Math.min(...entries.map((entry) => entry.value));
+        const root = byId("result-list");
+        root.textContent = "";
+
+        entries.forEach((entry) => {
+          const best = entry.value === bestValue;
+          const normalized = metric.direction === "lower"
+            ? (maximum - entry.value) / Math.max(0.0001, maximum - minimum)
+            : (entry.value - minimum) / Math.max(0.0001, maximum - minimum);
+          const row = document.createElement("div");
+          row.className = `result-row${best ? " best" : ""}`;
+          row.innerHTML = `<strong>${entry.method}</strong><span class="result-track"><span class="result-fill" style="width:${20 + normalized * 80}%"></span></span><strong class="result-value">${metricKey === "saturation" ? entry.value.toFixed(3) : entry.value.toFixed(2)}</strong>`;
+          root.appendChild(row);
+        });
+
+        const rankValue = metric.values.RankBALD[budgetIndex];
+        byId("results-note").textContent = `At ${activeBudget} items, RankBALD achieves ${metric.label} ${metricKey === "saturation" ? rankValue.toFixed(3) : rankValue.toFixed(2)}. ${metric.direction === "lower" ? "Lower is better." : "Higher is better."}`;
+        document.querySelectorAll("[data-result-budget]").forEach((button) => {
+          button.classList.toggle("active", Number(button.dataset.resultBudget) === activeBudget);
+        });
+      }
+
+      byId("result-metric-select").addEventListener("change", renderResults);
+      document.querySelectorAll("[data-result-budget]").forEach((button) => {
+        button.addEventListener("click", () => {
+          activeBudget = Number(button.dataset.resultBudget);
+          renderResults();
+        });
+      });
+
+      renderPosterior();
+      renderIRT();
+      renderIRTPosterior();
+      renderResponseMatrix();
+      resetCalibration();
+      renderMethod("bald");
+      resetLab();
+      renderResults();
+    }());
+  </script>
+</body>
+</html>
+

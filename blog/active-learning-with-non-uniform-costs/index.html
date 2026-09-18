@@ -1,0 +1,2329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An interactive essay on active learning with non-uniform annotation costs and KnapsackBALD for African NLP.">
+  <meta property="og:title" content="What If Labels Do Not Cost the Same?">
+  <meta property="og:description" content="Explore how KnapsackBALD selects informative batches under non-uniform annotation costs.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://bonaventuredossou.github.io/blog/active-learning-with-non-uniform-costs/index.html">
+  <title>
+  What If Labels Do Not Cost the Same? | Bonaventure F. P. Dossou
+  </title>
+  <link rel="canonical" href="https://bonaventuredossou.github.io/blog/active-learning-with-non-uniform-costs/index.html">
+  <link rel="icon" href="../../images/bd.ico">
+  <link rel="stylesheet" href="../assets/blog.css">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [["\\(", "\\)"]],
+        displayMath: [["\\[", "\\]"]]
+      },
+      options: {
+        skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"]
+      }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+  </script>
+  <style>
+    .reading-progress {
+        background:rgba(16,40,50,.1);
+        height:4px;
+        left:0;
+        position:fixed;
+        right:0;
+        top:0;
+        z-index:1000
+    }
+    .reading-progress span {
+        background:var(--coral,#d86f5e);
+        display:block;
+        height:100%;
+        width:0
+    }
+    .cost-intro-grid,.cost-scenario-grid,.method-steps {
+        display:grid;
+        gap:1rem
+    }
+    .cost-intro-grid {
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        margin:2rem 0
+    }
+    .cost-intro-grid article,.cost-scenario-card,.method-step {
+        background:#f7f4ed;
+        border:1px solid rgba(16,40,50,.12);
+        border-radius:14px;
+        padding:1.2rem
+    }
+    .cost-intro-grid strong,.cost-scenario-card strong,.method-step strong {
+        color:#102832;
+        display:block;
+        font-size:1.05rem;
+        margin-bottom:.45rem
+    }
+    .cost-lab {
+        background:#102832;
+        border-radius:18px;
+        color:#eef2ed;
+        margin:2.25rem 0;
+        overflow:hidden
+    }
+    .cost-lab-header {
+        align-items:flex-start;
+        border-bottom:1px solid rgba(255,255,255,.13);
+        display:flex;
+        gap:1.5rem;
+        justify-content:space-between;
+        padding:1.5rem
+    }
+    .cost-lab-header h3,.cost-lab-header p {
+        margin:0
+    }
+    .cost-lab-header p {
+        color:rgba(238,242,237,.72);
+        margin-top:.45rem;
+        max-width:690px
+    }
+    .live-badge {
+        background:#d86f5e;
+        border-radius:999px;
+        color:#fff;
+        flex:0 0 auto;
+        font-size:.72rem;
+        font-weight:800;
+        letter-spacing:.08em;
+        padding:.45rem .72rem;
+        text-transform:uppercase
+    }
+    .cost-controls {
+        display:grid;
+        gap:1rem;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        padding:1.5rem
+    }
+    .cost-control {
+        display:grid;
+        gap:.45rem
+    }
+    .cost-control label {
+        color:rgba(238,242,237,.76);
+        font-size:.75rem;
+        font-weight:800;
+        letter-spacing:.06em;
+        text-transform:uppercase
+    }
+    .cost-control select,.cost-control input {
+        width:100%
+    }
+    .cost-control select {
+        background:#fff;
+        border:0;
+        border-radius:8px;
+        color:#102832;
+        font:inherit;
+        min-height:44px;
+        padding:0 .75rem
+    }
+    .budget-line {
+        align-items:center;
+        display:flex;
+        gap:.8rem;
+        min-height:44px
+    }
+    .budget-line output {
+        background:rgba(255,255,255,.1);
+        border-radius:7px;
+        color:#fff;
+        font-variant-numeric:tabular-nums;
+        min-width:3.4rem;
+        padding:.38rem .5rem;
+        text-align:center
+    }
+    .cost-regenerate {
+        align-self:end;
+        background:transparent;
+        border:1px solid rgba(255,255,255,.35);
+        border-radius:8px;
+        color:#fff;
+        cursor:pointer;
+        font:inherit;
+        font-weight:700;
+        min-height:44px;
+        padding:.7rem 1rem
+    }
+    .cost-regenerate:hover,.cost-regenerate:focus-visible {
+        background:rgba(255,255,255,.1)
+    }
+    .cost-scenario-note,.cost-selection-note {
+        color:rgba(238,242,237,.74);
+        font-size:.9rem;
+        margin:0;
+        padding:0 1.5rem 1.1rem
+    }
+    .cost-candidates {
+        display:grid;
+        gap:.75rem;
+        grid-template-columns:repeat(5,minmax(0,1fr));
+        padding:0 1.5rem 1.5rem
+    }
+    .cost-candidate {
+        background:rgba(255,255,255,.055);
+        border:1px solid rgba(255,255,255,.1);
+        border-radius:10px;
+        opacity:.48;
+        padding:.9rem;
+        transition:opacity 160ms ease,transform 160ms ease,border-color 160ms ease
+    }
+    .cost-candidate.shortlisted {
+        opacity:.86
+    }
+    .cost-candidate.selected {
+        background:rgba(216,111,94,.16);
+        border-color:#d86f5e;
+        opacity:1;
+        transform:translateY(-2px)
+    }
+    .cost-candidate-heading,.cost-candidate-metric {
+        align-items:center;
+        display:flex;
+        justify-content:space-between
+    }
+    .cost-candidate-heading {
+        margin-bottom:.8rem
+    }
+    .cost-candidate-heading strong {
+        color:#fff
+    }
+    .cost-candidate-status {
+        color:rgba(238,242,237,.68);
+        font-size:.67rem;
+        font-weight:800;
+        letter-spacing:.05em;
+        text-transform:uppercase
+    }
+    .cost-candidate.selected .cost-candidate-status {
+        color:#f0a899
+    }
+    .cost-candidate-metric {
+        display:grid;
+        font-size:.72rem;
+        gap:.35rem;
+        margin-top:.55rem
+    }
+    .cost-mini-track {
+        background:rgba(255,255,255,.1);
+        border-radius:999px;
+        display:block;
+        height:5px;
+        overflow:hidden;
+        width:100%
+    }
+    .cost-info-fill,.cost-price-fill {
+        border-radius:inherit;
+        display:block;
+        height:100%
+    }
+    .cost-info-fill {
+        background:#76a6cc
+    }
+    .cost-price-fill {
+        background:#d7aa54
+    }
+    .cost-candidate small {
+        color:rgba(238,242,237,.62);
+        display:block;
+        font-size:.68rem;
+        line-height:1.35;
+        margin-top:.7rem
+    }
+    .cost-summary {
+        background:rgba(255,255,255,.055);
+        display:grid;
+        grid-template-columns:repeat(4,1fr)
+    }
+    .cost-summary div {
+        border-top:1px solid rgba(255,255,255,.13);
+        padding:1.1rem 1.5rem
+    }
+    .cost-summary span {
+        color:rgba(238,242,237,.64);
+        display:block;
+        font-size:.7rem;
+        font-weight:800;
+        letter-spacing:.06em;
+        margin-bottom:.2rem;
+        text-transform:uppercase
+    }
+    .cost-summary strong {
+        color:#fff;
+        font-size:1.35rem;
+        font-variant-numeric:tabular-nums
+    }
+    .method-steps {
+        grid-template-columns:repeat(4,minmax(0,1fr));
+        margin:2rem 0
+    }
+    .method-step span {
+        align-items:center;
+        background:#d86f5e;
+        border-radius:50%;
+        color:#fff;
+        display:flex;
+        font-size:.78rem;
+        font-weight:800;
+        height:2rem;
+        justify-content:center;
+        margin-bottom:.8rem;
+        width:2rem
+    }
+    .method-step p,.cost-scenario-card p {
+        margin:0
+    }
+    .cost-scenario-grid {
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        margin:2rem 0
+    }
+    .cost-scenario-card b {
+        color:#d86f5e;
+        display:block;
+        font-size:.72rem;
+        letter-spacing:.08em;
+        margin-bottom:.5rem;
+        text-transform:uppercase
+    }
+    .results-explorer {
+        border:1px solid rgba(16,40,50,.14);
+        border-radius:16px;
+        margin:2rem 0;
+        overflow:hidden
+    }
+    .results-controls {
+        background:#f7f4ed;
+        display:grid;
+        gap:1rem;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        padding:1.25rem
+    }
+    .results-controls label {
+        color:#52646a;
+        display:block;
+        font-size:.72rem;
+        font-weight:800;
+        letter-spacing:.06em;
+        margin-bottom:.35rem;
+        text-transform:uppercase
+    }
+    .results-controls select {
+        background:#fff;
+        border:1px solid rgba(16,40,50,.18);
+        border-radius:8px;
+        color:#102832;
+        font:inherit;
+        min-height:44px;
+        padding:0 .7rem;
+        width:100%
+    }
+    .result-bars {
+        padding:1.5rem
+    }
+    .result-row {
+        align-items:center;
+        display:grid;
+        gap:.8rem;
+        grid-template-columns:78px minmax(0,1fr) 72px;
+        margin:1rem 0
+    }
+    .result-track {
+        background:#e8ece8;
+        border-radius:999px;
+        height:18px;
+        overflow:hidden
+    }
+    .result-fill {
+        border-radius:inherit;
+        display:block;
+        height:100%;
+        transition:width 250ms ease
+    }
+    .result-fill.hs {
+        background:#d86f5e
+    }
+    .result-fill.lc {
+        background:#397d79
+    }
+    .result-row strong:last-child {
+        font-variant-numeric:tabular-nums;
+        text-align:right
+    }
+    .results-note {
+        color:#52646a;
+        margin:0;
+        padding:0 1.5rem 1.5rem
+    }
+    .formula-card {
+        background:#eef1ed;
+        border-left:4px solid #397d79;
+        margin:2rem 0;
+        padding:1.25rem
+    }
+    .formula-card code {
+        color:#102832;
+        display:block;
+        font-size:clamp(.92rem,2vw,1.2rem);
+        margin-bottom:.6rem;
+        overflow-wrap:anywhere
+    }
+    .math-stack {
+        display:grid;
+        gap:1rem
+    }
+    .math-block {
+        background:#fff;
+        border:1px solid rgba(16,40,50,.1);
+        border-radius:10px;
+        padding:1rem
+    }
+    .math-block span {
+        color:#52646a;
+        display:block;
+        font-size:.72rem;
+        font-weight:800;
+        letter-spacing:.06em;
+        margin-bottom:.55rem;
+        text-transform:uppercase
+    }
+    .math-display {
+        color:#102832;
+        font-family:Georgia,"Times New Roman",serif;
+        font-size:clamp(1rem,2.4vw,1.35rem);
+        line-height:1.7;
+        overflow-x:auto;
+        text-align:center;
+        white-space:nowrap
+    }
+    .math-explanation {
+        color:#52646a;
+        font-size:.9rem;
+        margin:.5rem 0 0
+    }
+    .knapsack-teacher {
+        border:1px solid rgba(16,40,50,.14);
+        border-radius:18px;
+        margin:2rem 0;
+        overflow:hidden
+    }
+    .knapsack-teacher-head {
+        background:#f7f4ed;
+        border-bottom:1px solid rgba(16,40,50,.12);
+        padding:1.4rem
+    }
+    .knapsack-teacher-head h3,.knapsack-teacher-head p {
+        margin:0
+    }
+    .knapsack-teacher-head p {
+        color:#52646a;
+        margin-top:.4rem
+    }
+    .toy-controls {
+        align-items:end;
+        display:grid;
+        gap:1rem;
+        grid-template-columns:minmax(0,1fr) auto auto;
+        padding:1.25rem
+    }
+    .toy-budget label {
+        color:#52646a;
+        display:block;
+        font-size:.72rem;
+        font-weight:800;
+        letter-spacing:.06em;
+        margin-bottom:.45rem;
+        text-transform:uppercase
+    }
+    .toy-budget-line {
+        align-items:center;
+        display:flex;
+        gap:.8rem
+    }
+    .toy-budget-line input {
+        width:100%
+    }
+    .toy-budget-line output {
+        background:#eef1ed;
+        border-radius:7px;
+        color:#102832;
+        font-weight:800;
+        min-width:3rem;
+        padding:.42rem .55rem;
+        text-align:center
+    }
+    .toy-button {
+        background:#102832;
+        border:1px solid #102832;
+        border-radius:8px;
+        color:#fff;
+        cursor:pointer;
+        font:inherit;
+        font-weight:750;
+        min-height:44px;
+        padding:.7rem 1rem
+    }
+    .toy-button.secondary {
+        background:transparent;
+        color:#102832
+    }
+    .toy-button:hover,.toy-button:focus-visible {
+        filter:brightness(1.15)
+    }
+    .toy-items {
+        display:grid;
+        gap:.75rem;
+        grid-template-columns:repeat(6,minmax(0,1fr));
+        padding:0 1.25rem 1.25rem
+    }
+    .toy-item {
+        background:#fff;
+        border:2px solid #dfe5e2;
+        border-radius:12px;
+        color:#102832;
+        cursor:pointer;
+        padding:1rem;
+        text-align:left;
+        transition:background 150ms ease,border-color 150ms ease,transform 150ms ease
+    }
+    .toy-item:hover,.toy-item:focus-visible {
+        border-color:#76a6cc;
+        transform:translateY(-2px)
+    }
+    .toy-item.selected {
+        background:rgba(216,111,94,.09);
+        border-color:#d86f5e
+    }
+    .toy-item.optimal {
+        box-shadow:0 0 0 3px rgba(57,125,121,.22)
+    }
+    .toy-item strong {
+        display:block;
+        font-size:1.1rem;
+        margin-bottom:.65rem
+    }
+    .toy-item span {
+        display:block;
+        font-size:.78rem;
+        line-height:1.6
+    }
+    .toy-bit {
+        color:#d86f5e;
+        font-weight:800;
+        margin-top:.55rem
+    }
+    .toy-summary {
+        background:#102832;
+        color:#fff;
+        display:grid;
+        grid-template-columns:repeat(4,minmax(0,1fr))
+    }
+    .toy-summary div {
+        padding:1rem 1.25rem
+    }
+    .toy-summary span {
+        color:rgba(255,255,255,.62);
+        display:block;
+        font-size:.68rem;
+        font-weight:800;
+        letter-spacing:.06em;
+        margin-bottom:.25rem;
+        text-transform:uppercase
+    }
+    .toy-summary strong {
+        font-size:1.15rem;
+        font-variant-numeric:tabular-nums
+    }
+    .toy-summary .feasible {
+        color:#8fd2bd
+    }
+    .toy-summary .over {
+        color:#ff9e8c
+    }
+    .toy-equation {
+        background:#eef1ed;
+        color:#102832;
+        font-family:Georgia,"Times New Roman",serif;
+        margin:0;
+        padding:1rem 1.25rem;
+        text-align:center
+    }
+    .toy-message {
+        color:#52646a;
+        margin:0;
+        padding:1rem 1.25rem
+    }
+    .toy-button:disabled {
+        cursor:not-allowed;
+        filter:none;
+        opacity:.45
+    }
+    .toy-action-row {
+        display:flex;
+        flex-wrap:wrap;
+        gap:.65rem;
+        padding:0 1.25rem 1.25rem
+    }
+    .toy-action-row .toy-button {
+        flex:1 1 150px
+    }
+    .capacity-wrap {
+        padding:0 1.25rem 1.25rem
+    }
+    .capacity-labels {
+        color:#52646a;
+        display:flex;
+        font-size:.78rem;
+        justify-content:space-between;
+        margin-bottom:.45rem
+    }
+    .capacity-track {
+        background:#e8ece8;
+        border-radius:999px;
+        height:18px;
+        overflow:hidden;
+        position:relative
+    }
+    .capacity-fill {
+        background:#397d79;
+        border-radius:inherit;
+        height:100%;
+        transition:width 180ms ease,background 180ms ease;
+        width:0
+    }
+    .capacity-fill.over {
+        background:#d86f5e
+    }
+    .capacity-overflow {
+        color:#52646a;
+        font-size:.78rem;
+        font-weight:700;
+        margin:.4rem 0 0;
+        min-height:1.2em
+    }
+    .toy-feedback-good {
+        color:#256b55
+    }
+    .toy-feedback-warn {
+        color:#9b5b20
+    }
+    .toy-feedback-bad {
+        color:#b64f40
+    }
+    .dp-explainer {
+        background:#f7f4ed;
+        border-top:1px solid rgba(16,40,50,.12);
+        display:none;
+        padding:1.25rem
+    }
+    .dp-explainer.open {
+        display:block
+    }
+    .dp-explainer h4 {
+        margin:0 0 .45rem
+    }
+    .dp-explainer p {
+        color:#52646a;
+        margin:.35rem 0
+    }
+    .dp-step-controls {
+        align-items:center;
+        display:flex;
+        flex-wrap:wrap;
+        gap:.65rem;
+        margin:1rem 0
+    }
+    .dp-step-controls output {
+        color:#102832;
+        font-weight:800;
+        min-width:110px;
+        text-align:center
+    }
+    .dp-table-wrap {
+        overflow-x:auto
+    }
+    .dp-table {
+        border-collapse:collapse;
+        font-size:.76rem;
+        min-width:620px;
+        width:100%
+    }
+    .dp-table th,.dp-table td {
+        border:1px solid #d7dedb;
+        padding:.45rem;
+        text-align:center
+    }
+    .dp-table th {
+        background:#e8ece8;
+        color:#102832
+    }
+    .dp-table tr.active-row td,.dp-table tr.active-row th {
+        background:#fff3ef
+    }
+    .dp-table td.target-cell {
+        background:#d8ece7!important;
+        font-weight:800
+    }
+    .dp-decision {
+        background:#fff;
+        border:1px solid rgba(16,40,50,.1);
+        border-radius:10px;
+        margin-top:1rem;
+        padding:1rem
+    }
+    .mapping-panel {
+        background:#102832;
+        border-radius:14px;
+        color:#fff;
+        margin:1.5rem 0;
+        overflow:hidden
+    }
+    .mapping-head {
+        align-items:center;
+        display:flex;
+        gap:1rem;
+        justify-content:space-between;
+        padding:1.1rem 1.25rem
+    }
+    .mapping-head h3,.mapping-head p {
+        margin:0
+    }
+    .mapping-head p {
+        color:rgba(255,255,255,.65);
+        font-size:.86rem;
+        margin-top:.25rem
+    }
+    .mapping-grid {
+        display:grid;
+        grid-template-columns:repeat(4,minmax(0,1fr))
+    }
+    .mapping-item {
+        border-top:1px solid rgba(255,255,255,.12);
+        padding:1rem 1.25rem
+    }
+    .mapping-item span {
+        color:rgba(255,255,255,.58);
+        display:block;
+        font-size:.68rem;
+        font-weight:800;
+        letter-spacing:.06em;
+        margin-bottom:.35rem;
+        text-transform:uppercase
+    }
+    .mapping-item strong {
+        display:block
+    }
+    .mapping-item em {
+        color:#8fd2bd;
+        display:block;
+        font-style:normal;
+        margin-top:.35rem;
+        opacity:0;
+        transform:translateY(4px);
+        transition:opacity 180ms ease,transform 180ms ease
+    }
+    .mapping-panel.revealed .mapping-item em {
+        opacity:1;
+        transform:none
+    }
+    .stage-pipeline {
+        display:grid;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        padding:1.25rem 1.5rem 0
+    }
+    .stage-button {
+        background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.18);
+        color:rgba(255,255,255,.68);
+        cursor:pointer;
+        font:inherit;
+        padding:.8rem;
+        text-align:left
+    }
+    .stage-button:first-child {
+        border-radius:9px 0 0 9px
+    }
+    .stage-button:last-child {
+        border-radius:0 9px 9px 0
+    }
+    .stage-button.active {
+        background:#fff;
+        color:#102832
+    }
+    .stage-button span {
+        display:block;
+        font-size:.66rem;
+        font-weight:800;
+        letter-spacing:.06em;
+        text-transform:uppercase
+    }
+    .stage-button strong {
+        display:block;
+        margin-top:.2rem
+    }
+    .stage-explanation {
+        color:rgba(238,242,237,.74);
+        margin:0;
+        padding:1rem 1.5rem
+    }
+    .global-budget {
+        border-bottom:1px solid rgba(255,255,255,.13);
+        border-top:1px solid rgba(255,255,255,.13);
+        padding:1.2rem 1.5rem
+    }
+    .global-budget-head {
+        align-items:center;
+        display:flex;
+        gap:1rem;
+        justify-content:space-between
+    }
+    .global-budget-head strong {
+        font-variant-numeric:tabular-nums
+    }
+    .global-track {
+        background:rgba(255,255,255,.12);
+        border-radius:999px;
+        height:12px;
+        margin-top:.7rem;
+        overflow:hidden
+    }
+    .global-fill {
+        background:#8fd2bd;
+        border-radius:inherit;
+        height:100%;
+        transition:width 200ms ease;
+        width:100%
+    }
+    .round-actions {
+        display:flex;
+        flex-wrap:wrap;
+        gap:.7rem;
+        padding:0 1.5rem 1.5rem
+    }
+    .round-actions button {
+        flex:1 1 180px
+    }
+    .cost-candidate.preselected {
+        opacity:.72
+    }
+    .cost-candidate.stage-focus {
+        border-color:#76a6cc;
+        opacity:1
+    }
+    .cost-candidate.stage-muted {
+        opacity:.22
+    }
+    .cost-round-note {
+        color:rgba(238,242,237,.72);
+        margin:0;
+        padding:0 1.5rem 1.25rem
+    }
+    @media(max-width:900px) {
+        .cost-candidates {
+            grid-template-columns:repeat(2,minmax(0,1fr))
+        }
+        .method-steps,.cost-scenario-grid {
+            grid-template-columns:repeat(2,minmax(0,1fr))
+        }
+        .toy-items {
+            grid-template-columns:repeat(3,minmax(0,1fr))
+        }
+        .mapping-grid {
+            grid-template-columns:repeat(2,minmax(0,1fr))
+        }
+    }
+    @media(max-width:680px) {
+        .cost-intro-grid,.cost-controls,.method-steps,.cost-scenario-grid,.results-controls,.cost-summary,.toy-controls,.toy-summary,.mapping-grid,.stage-pipeline {
+            grid-template-columns:1fr
+        }
+        .cost-lab-header,.mapping-head,.global-budget-head {
+            display:block
+        }
+        .live-badge {
+            display:inline-block;
+            margin-top:1rem
+        }
+        .cost-candidates,.toy-items {
+            grid-template-columns:1fr
+        }
+        .math-display {
+            font-size:.95rem;
+            text-align:left
+        }
+        .toy-button {
+            width:100%
+        }
+        .stage-button,.stage-button:first-child,.stage-button:last-child {
+            border-radius:8px;
+            margin-bottom:.45rem
+        }
+    }
+  </style>
+</head>
+<body class="article-page">
+  <div class="reading-progress" aria-hidden="true">
+  <span id="reading-progress-bar">
+  </span>
+  </div>
+  <header class="site-header article-header">
+    <a class="site-brand" href="../../index.html#top" aria-label="Bonaventure F. P. Dossou home">
+    <span class="brand-mark">
+    BD
+    </span>
+    <span>
+    Bonaventure F. P. Dossou
+    </span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="../../index.html#top">
+      About
+      </a>
+      <a href="../../index.html#research">
+      Research
+      </a>
+      <a href="../../index.html#education">
+      Education
+      </a>
+      <a href="../../index.html#experience">
+      Experience
+      </a>
+      <a href="../../index.html#publications">
+      Publications
+      </a>
+      <a href="../../index.html#recognition">
+      Awards
+      </a>
+      <a href="../../index.html#skills">
+      Skills
+      </a>
+      <a class="active" href="../index.html">
+      Blog
+      </a>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <header class="article-hero">
+        <div class="article-hero-grid">
+          <div class="article-hero-copy">
+            <a class="series-link" href="../index.html">
+            Active Learning Under Real Constraints
+            <span>
+            02 / 03
+            </span>
+            </a>
+            <h1>
+            What If Labels
+            <br>
+            <em>
+            Do Not Cost the Same?
+            </em>
+</h1>
+            <p class="dek">
+            Active learning usually counts labels. Real annotation projects pay for time, expertise,
+            language access, annotator reliability, and example difficulty.
+            </p>
+            <div class="byline">
+<span>
+By
+<strong>
+Bonaventure F. P. Dossou
+</strong>
+</span>
+<span>
+Findings of EACL 2026
+</span>
+<span>
+Interactive essay
+</span>
+</div>
+            <div class="hero-actions">
+<a class="primary-link" href="https://aclanthology.org/2026.findings-eacl.349/">
+Read the paper
+</a>
+<a href="https://github.com/bonaventuredossou/al_knapsack_bald">
+View the code
+</a>
+<a href="../index.html">
+All essays
+</a>
+</div>
+          </div>
+          <div class="hero-orbit" aria-hidden="true">
+            <div class="hero-orbit-label">
+            Information has value. Annotation has cost.
+            </div>
+<div class="ring ring-a">
+</div>
+<div class="ring ring-b">
+</div>
+<div class="ring ring-c">
+</div>
+<span class="point class-a p1">
+</span>
+<span class="point class-a p2">
+</span>
+<span class="point class-b p4">
+</span>
+<span class="point class-b p5">
+</span>
+<span class="point unknown p7">
+$
+</span>
+<div class="hero-divider">
+</div>
+          </div>
+        </div>
+      </header>
+      <div class="article-body">
+        <section>
+          <div class="section-marker">
+          01: The missing constraint
+          </div>
+          <h2>
+          The next active learning decision is not only what to label. It is what is worth its cost.
+          </h2>
+          <p class="lead">
+          Two examples can carry similar information while requiring very different annotation
+          effort. A useful acquisition strategy must reason about both the value of a batch and
+          the resources needed to obtain it.
+          </p>
+          <div class="definition-card">
+<span class="definition-label">
+The central question
+</span>
+<p>
+Given a fixed annotation budget and non-uniform example costs, which subset provides the
+greatest expected information gain?
+</p>
+</div>
+          <div class="cost-intro-grid">
+            <article>
+            <strong>
+            Uniform-cost active learning
+            </strong>
+            <p>
+            Every label is treated as one identical unit. The method can select a highly informative
+            batch that is too expensive in practice.
+            </p>
+            </article>
+            <article>
+            <strong>
+            Cost-aware active learning
+            </strong>
+            <p>
+            Each candidate has an informativeness score and an instance-level cost. Selection
+            becomes a constrained optimization problem.
+            </p>
+            </article>
+          </div>
+          <div class="formula-card">
+            <div class="math-stack">
+              <div class="math-block">
+                <span>
+                Overall cost-sensitive active learning objective
+                </span>
+                <div class="math-display">
+                \[\max_{(B^1,\ldots,B^R)} \operatorname{Perf}(f^R) \quad \text{subject to} \quad
+                \sum_{r=1}^{R}\sum_{x\in B^r}g(x)\le C\]
+                </div>
+                <p class="math-explanation">
+                The goal is to maximize final-model performance while respecting one global budget C
+                across all R acquisition rounds.
+                </p>
+              </div>
+              <div class="math-block">
+                <span>
+                Remaining budget after round r
+                </span>
+                <div class="math-display">
+                \[C^r=C-\sum_{r'=1}^{r}\sum_{x\in B^{r'}}g(x)\]
+                </div>
+                <p class="math-explanation">
+                Every acquired batch reduces the same global budget. The budget does not restart at each
+                round.
+                </p>
+              </div>
+              <div class="math-block">
+                <span>
+                KnapsackBALD batch construction
+                </span>
+                <div class="math-display">
+                \[B^r=\underset{\bar A\subseteq A^k}{\operatorname{arg\,max}}\sum_{x\in\bar A}a(x) \quad
+                \text{subject to} \quad \sum_{x\in\bar A}g(x)\le C^{r-1}\]
+                </div>
+                <p class="math-explanation">
+                A
+                <sup>
+                k
+                </sup>
+                is the ranked candidate set, a(x) is informativeness, and the chosen subset becomes the
+                round batch B
+                <sup>
+                r
+                </sup>
+                .
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section aria-labelledby="knapsack-title">
+          <div class="section-marker">
+          02: First, understand 0-1 knapsack
+          </div>
+          <h2 id="knapsack-title">
+          Each item is either selected once or not selected.
+          </h2>
+          <p>
+          A 0-1 knapsack problem gives every item a value and a cost. For each item i, the binary
+          variable z
+          <sub>
+          i
+          </sub>
+          is 1 when the item is selected and 0 when it is not. The goal is to maximize total value
+          without exceeding the budget.
+          </p>
+          <div class="formula-card">
+            <div class="math-block">
+              <span>
+              Generic 0-1 knapsack objective
+              </span>
+              <div class="math-display">
+              \[\max_{z_1,\ldots,z_n}\sum_{i=1}^{n}v_i z_i \quad \text{subject to} \quad
+              \sum_{i=1}^{n}c_i z_i\le W, \qquad z_i\in\{0,1\}\]
+              </div>
+              <p class="math-explanation">
+              v
+              <sub>
+              i
+              </sub>
+              is value, c
+              <sub>
+              i
+              </sub>
+              is cost, W is the budget, and z
+              <sub>
+              i
+              </sub>
+              is the keep-or-skip decision.
+              </p>
+            </div>
+          </div>
+          <div class="formula-card">
+            <div class="math-block">
+              <span>
+              Dynamic-programming decision
+              </span>
+              <div class="math-display">
+              \[DP(i,w)=\max\left(DP(i-1,w),\;v_i+DP(i-1,w-c_i)\right)\]
+              </div>
+              <p class="math-explanation">
+              At each item and capacity, compare skipping the item with taking it. Taking is available
+              only when the item fits.
+              </p>
+            </div>
+          </div>
+          <div class="knapsack-teacher" id="knapsack-teacher">
+            <div class="knapsack-teacher-head">
+              <h3>
+              Pack the most value into the budget
+              </h3>
+              <p>
+              Select items manually, change the budget, or ask the solver to find the optimal subset.
+              </p>
+            </div>
+            <div class="toy-controls">
+              <div class="toy-budget">
+                <label for="toy-budget-slider">
+                Knapsack budget W
+                </label>
+                <div class="toy-budget-line">
+                  <input id="toy-budget-slider" type="range" min="4" max="15" step="1" value="10">
+                  <output id="toy-budget-value" for="toy-budget-slider">
+                  10
+                  </output>
+                </div>
+              </div>
+              <button class="toy-button secondary" id="toy-reset" type="button">
+              Reset selection
+              </button>
+              <button class="toy-button secondary" id="toy-greedy" type="button">
+              Try highest value first
+              </button>
+            </div>
+            <div class="toy-items" id="toy-items">
+            </div>
+            <div class="capacity-wrap">
+              <div class="capacity-labels">
+<span>
+Used capacity
+</span>
+<strong id="toy-capacity-label">
+0 of 10
+</strong>
+</div>
+              <div class="capacity-track">
+              <div class="capacity-fill" id="toy-capacity-fill">
+              </div>
+              </div>
+              <p class="capacity-overflow" id="toy-capacity-overflow">
+              </p>
+            </div>
+            <div class="toy-action-row">
+              <button class="toy-button secondary" id="toy-check" type="button">
+              Check my selection
+              </button>
+              <button class="toy-button" id="toy-solve" type="button">
+              Show optimal solution
+              </button>
+              <button class="toy-button secondary" id="toy-explain" type="button">
+              Explain the solver
+              </button>
+            </div>
+            <p class="toy-equation" id="toy-equation">
+            z = [0, 0, 0, 0, 0, 0]
+            </p>
+            <div class="toy-summary" aria-live="polite">
+              <div>
+<span>
+Selected items
+</span>
+<strong id="toy-selected">
+None
+</strong>
+</div>
+              <div>
+<span>
+Total value
+</span>
+<strong id="toy-value">
+0
+</strong>
+</div>
+              <div>
+<span>
+Total cost
+</span>
+<strong id="toy-cost">
+0 / 10
+</strong>
+</div>
+              <div>
+<span>
+Constraint
+</span>
+<strong class="feasible" id="toy-status">
+Feasible
+</strong>
+</div>
+            </div>
+            <p class="toy-message" id="toy-message">
+            Select any combination. A selection is valid while its total cost is at most W.
+            </p>
+            <div class="dp-explainer" id="dp-explainer">
+              <h4>
+              How dynamic programming reaches the answer
+              </h4>
+              <p>
+              The table stores the best value possible after considering the first i items at every
+              capacity w.
+              </p>
+              <div class="dp-step-controls">
+                <button class="toy-button secondary" id="dp-previous" type="button">
+                Previous item
+                </button>
+                <output id="dp-step-output">
+                Start
+                </output>
+                <button class="toy-button secondary" id="dp-next" type="button">
+                Next item
+                </button>
+              </div>
+              <div class="dp-table-wrap">
+              <table class="dp-table" id="dp-table">
+              </table>
+              </div>
+              <div class="dp-decision" id="dp-decision">
+              Start with no items. Every capacity has value zero.
+              </div>
+            </div>
+          </div>
+          <div class="mapping-panel" id="mapping-panel">
+            <div class="mapping-head">
+              <div>
+<h3>
+How this maps to the paper
+</h3>
+<p>
+The optimization stays the same. Item value becomes acquisition score, item cost becomes
+annotation cost, capacity becomes the remaining budget, and selected items become the
+acquisition batch.
+</p>
+</div>
+              <button class="toy-button" id="mapping-toggle" type="button">
+              Show the mapping
+              </button>
+            </div>
+            <div class="mapping-grid">
+              <div class="mapping-item">
+<span>
+Knapsack value
+</span>
+<strong>
+v
+<sub>
+i
+</sub>
+</strong>
+<em>
+Informativeness a(x
+<sub>
+i
+</sub>
+)
+</em>
+</div>
+              <div class="mapping-item">
+<span>
+Knapsack cost
+</span>
+<strong>
+c
+<sub>
+i
+</sub>
+</strong>
+<em>
+Annotation cost g(x
+<sub>
+i
+</sub>
+)
+</em>
+</div>
+              <div class="mapping-item">
+<span>
+Capacity
+</span>
+<strong>
+W
+</strong>
+<em>
+Remaining budget C
+<sup>
+r-1
+</sup>
+</em>
+</div>
+              <div class="mapping-item">
+<span>
+Selected items
+</span>
+<strong>
+{i : z
+<sub>
+i
+</sub>
+= 1}
+</strong>
+<em>
+Acquisition batch B
+<sup>
+r
+</sup>
+</em>
+</div>
+            </div>
+          </div>
+        </section>
+        <section aria-labelledby="lab-title">
+          <div class="section-marker">
+          03: Interactive KnapsackBALD lab
+          </div>
+          <h2 id="lab-title">
+          Change the costs, ranking rule, and budget.
+          </h2>
+          <p>
+          This scaled demonstration starts with 12 pool items, preselects 10 instead of the
+          paper's 80, and keeps 7 instead of 60 before solving the knapsack problem. The selection
+          logic is the same, while the displayed per-item scores make each stage visible. The
+          paper uses BatchBALD for the preselection step.
+          </p>
+          <p>
+          The round spending-limit slider is a teaching control. In the paper, the knapsack is
+          constrained by the remaining global budget. Here, the effective constraint is the
+          smaller of the slider value and the remaining global budget.
+          </p>
+          <div class="cost-lab" id="knapsack-lab">
+            <div class="cost-lab-header">
+<div>
+<h3>
+Build an affordable acquisition batch
+</h3>
+<p>
+Selected cards form B
+<sub>
+r
+</sub>
+. Shortlisted cards passed the ranking stage but were not chosen by the 0-1 knapsack solver.
+</p>
+</div>
+<span class="live-badge">
+Interactive
+</span>
+</div>
+            <div class="global-budget">
+              <div class="global-budget-head">
+                <span>
+                Scaled global budget C across five rounds
+                </span>
+                <strong>
+                <span id="global-budget-remaining">
+                12.00
+                </span>
+                / 12.00 remaining
+                </strong>
+              </div>
+              <div class="global-track">
+              <div class="global-fill" id="global-budget-fill">
+              </div>
+              </div>
+            </div>
+            <div class="cost-controls">
+              <div class="cost-control">
+<label for="cost-scenario-select">
+Cost scenario
+</label>
+<select id="cost-scenario-select">
+<option value="varying">
+1. Varying costs
+</option>
+<option value="reliability">
+2. Annotator reliability
+</option>
+<option value="difficulty">
+3. Sample difficulty
+</option>
+</select>
+</div>
+              <div class="cost-control">
+<label for="cost-ranking-select">
+Ranking before knapsack
+</label>
+<select id="cost-ranking-select">
+<option value="hs">
+HS: highest informativeness
+</option>
+<option value="lc">
+LC: lowest cost
+</option>
+</select>
+</div>
+              <div class="cost-control">
+<label for="cost-budget-slider">
+Round spending limit / available budget
+</label>
+<div class="budget-line">
+<input id="cost-budget-slider" type="range" min="0.25" max="6" step="0.25" value="2.5">
+<output id="cost-budget-value" for="cost-budget-slider">
+2.50
+</output>
+</div>
+</div>
+              <button class="cost-regenerate" id="cost-regenerate" type="button">
+              Generate another pool
+              </button>
+            </div>
+            <div class="stage-pipeline" aria-label="KnapsackBALD stages">
+              <button class="stage-button active" type="button" data-cost-stage="preselect">
+              <span>
+              Stage 1
+              </span>
+              <strong>
+              BatchBALD preselection
+              </strong>
+              </button>
+              <button class="stage-button" type="button" data-cost-stage="rank">
+              <span>
+              Stage 2
+              </span>
+              <strong>
+              HS or LC ranking
+              </strong>
+              </button>
+              <button class="stage-button" type="button" data-cost-stage="knapsack">
+              <span>
+              Stage 3
+              </span>
+              <strong>
+              0-1 knapsack
+              </strong>
+              </button>
+            </div>
+            <p class="stage-explanation" id="cost-stage-explanation">
+            </p>
+            <p class="cost-scenario-note" id="cost-scenario-note">
+            </p>
+            <div class="cost-candidates" id="cost-candidates" aria-live="polite">
+            </div>
+            <p class="cost-selection-note" id="cost-selection-note">
+            </p>
+            <div class="cost-summary" aria-live="polite">
+<div>
+<span>
+Current round
+</span>
+<strong id="cost-round">
+1 / 5
+</strong>
+</div>
+<div>
+<span>
+Selected examples
+</span>
+<strong id="cost-selected-count">
+0
+</strong>
+</div>
+<div>
+<span>
+Total information
+</span>
+<strong id="cost-selected-value">
+0.00
+</strong>
+</div>
+<div>
+<span>
+Batch cost / available budget
+</span>
+<strong id="cost-selected-cost">
+0.00 / 2.50
+</strong>
+</div>
+</div>
+            <p class="cost-round-note" id="cost-round-note">
+            Inspect the three stages, then acquire the selected batch to spend from the global budget.
+            </p>
+            <div class="round-actions">
+              <button class="toy-button" id="cost-acquire" type="button">
+              Acquire selected batch
+              </button>
+              <button class="toy-button secondary" id="cost-reset-rounds" type="button">
+              Reset five-round simulation
+              </button>
+            </div>
+          </div>
+          <div class="caveat-card">
+<span>
+Try this
+</span>
+<h3>
+Hold the pool constant and switch from HS to LC.
+</h3>
+<p>
+HS protects highly informative candidates during ranking. LC protects cheap candidates.
+The knapsack step then finds the most informative affordable subset inside that
+shortlist.
+</p>
+</div>
+        </section>
+        <section>
+          <div class="section-marker">
+          04: The method
+          </div>
+          <h2>
+          KnapsackBALD separates candidate generation, ranking, and constrained selection.
+          </h2>
+          <div class="method-steps">
+            <article class="method-step">
+            <span>
+            1
+            </span>
+            <strong>
+            Preselect 80
+            </strong>
+            <p>
+            BatchBALD identifies a diverse set of informative candidates from the unlabeled pool.
+            </p>
+            </article>
+            <article class="method-step">
+            <span>
+            2
+            </span>
+            <strong>
+            Rank and keep 60
+            </strong>
+            <p>
+            HS keeps the most informative candidates. LC keeps the least costly candidates.
+            </p>
+            </article>
+            <article class="method-step">
+            <span>
+            3
+            </span>
+            <strong>
+            Solve 0-1 knapsack
+            </strong>
+            <p>
+            The optimizer selects the highest-value combination that fits the remaining budget.
+            </p>
+            </article>
+            <article class="method-step">
+            <span>
+            4
+            </span>
+            <strong>
+            Repeat for 5 rounds
+            </strong>
+            <p>
+            The batch is labeled, the model is updated, and the pool and budget are reduced.
+            </p>
+            </article>
+          </div>
+          <p>
+          The experiments use a global annotation budget equal to 30 percent of the normalized
+          pool cost. Costs are normalized so their average is one, making results comparable
+          across languages and cost scenarios.
+          </p>
+        </section>
+        <section>
+          <div class="section-marker">
+          05: Three ways costs become unequal
+          </div>
+          <h2>
+          Non-uniform cost is not a single phenomenon.
+          </h2>
+          <div class="cost-scenario-grid">
+            <article class="cost-scenario-card">
+            <b>
+            Scenario 1
+            </b>
+            <strong>
+            Varying costs
+            </strong>
+            <p>
+            Examples receive heterogeneous costs directly, representing generic variation in
+            annotation effort.
+            </p>
+            </article>
+            <article class="cost-scenario-card">
+            <b>
+            Scenario 2
+            </b>
+            <strong>
+            Annotator reliability
+            </strong>
+            <p>
+            More reliable annotation is modeled as more expensive, capturing a quality and cost
+            tradeoff.
+            </p>
+            </article>
+            <article class="cost-scenario-card">
+            <b>
+            Scenario 3
+            </b>
+            <strong>
+            Sample difficulty
+            </strong>
+            <p>
+            Language-model perplexity represents difficulty. Harder examples receive higher
+            annotation costs.
+            </p>
+            </article>
+          </div>
+          <p>
+          Each scenario is evaluated at baseline, moderate, and high levels of cost extremity. As
+          the distribution becomes more uneven, ignoring cost becomes increasingly damaging.
+          </p>
+        </section>
+        <section aria-labelledby="results-title">
+          <div class="section-marker">
+          06: Interactive results
+          </div>
+          <h2 id="results-title">
+          The advantage grows as costs become more extreme.
+          </h2>
+          <p>
+          Select a scenario and extremity level to inspect the reported relative F1 improvement
+          over the uniform-cost BatchBALD baseline.
+          </p>
+          <div class="results-explorer" id="cost-results-explorer">
+            <div class="results-controls">
+              <div>
+<label for="cost-results-scenario">
+Cost scenario
+</label>
+<select id="cost-results-scenario">
+<option value="1">
+1. Varying costs
+</option>
+<option value="2">
+2. Annotator reliability
+</option>
+<option value="3">
+3. Sample difficulty
+</option>
+</select>
+</div>
+              <div>
+<label for="cost-results-level">
+Cost extremity
+</label>
+<select id="cost-results-level">
+<option value="1">
+Baseline
+</option>
+<option value="2">
+Moderate
+</option>
+<option value="3" selected>
+High
+</option>
+</select>
+</div>
+            </div>
+            <div class="result-bars" aria-live="polite">
+              <div class="result-row">
+<strong>
+HS-BDK
+</strong>
+<span class="result-track">
+<span class="result-fill hs" id="gain-hs-bar">
+</span>
+</span>
+<strong id="gain-hs-value">
++0.00%
+</strong>
+</div>
+              <div class="result-row">
+<strong>
+LC-BDK
+</strong>
+<span class="result-track">
+<span class="result-fill lc" id="gain-lc-bar">
+</span>
+</span>
+<strong id="gain-lc-value">
++0.00%
+</strong>
+</div>
+            </div>
+            <p class="results-note" id="gain-note">
+            </p>
+          </div>
+          <div class="definition-card">
+<span class="definition-label">
+Reading the result
+</span>
+<p>
+At high extremity, both variants improve relative F1 by more than 10 percent in every
+scenario. The highest reported gain is 12.84 percent for LC-BDK under sample-difficulty
+costs.
+</p>
+</div>
+        </section>
+        <section>
+          <div class="section-marker">
+          07: What this changes
+          </div>
+          <h2>
+          Counted labels are not the same as spent resources.
+          </h2>
+          <p>
+          The experiments cover 13 MasakhaNEWS language conditions, including 11 African languages
+          plus English and French, and use AfroXLMR-Large. Performance is measured after each
+          acquisition round, with final results averaged across five random seeds.
+          </p>
+          <p>
+          Uniform-cost BatchBALD remains a strong baseline when costs are close to equal. As
+          heterogeneity increases, cost-aware selection extracts more predictive value from the
+          same annotation budget.
+          </p>
+          <div class="caveat-card">
+<span>
+Limitation
+</span>
+<h3>
+The study simulates annotation costs.
+</h3>
+<p>
+The scenarios are controlled abstractions of real annotation markets. A natural next
+step is to estimate costs from observed annotation time, annotator expertise,
+disagreement, and language-specific access constraints.
+</p>
+</div>
+        </section>
+        <section class="paper-section" aria-labelledby="paper-two-title">
+          <div class="paper-number">
+          Paper behind this essay
+          </div>
+          <h2 id="paper-two-title">
+          Active Learning with Non-Uniform Costs for African Natural Language Processing
+          </h2>
+          <p>
+          Bonaventure F. P. Dossou, Ines Arous, Audrey Durand, and Jackie Chi Kit Cheung. Findings
+          of EACL, 2026.
+          </p>
+          <div class="paper-actions">
+<a class="primary-link" href="https://aclanthology.org/2026.findings-eacl.349/">
+Paper
+</a>
+<a href="https://aclanthology.org/2026.findings-eacl.349.bib">
+BibTeX
+</a>
+<a href="https://github.com/bonaventuredossou/al_knapsack_bald">
+Code
+</a>
+<a href="../../index.html#publications">
+Publications
+</a>
+</div>
+        </section>
+        <nav class="next-essay" aria-label="Next essay">
+        <div>
+<span>
+Next in the series
+</span>
+<small>
+Active Learning Under Real Constraints, Part III
+</small>
+</div>
+<div>
+<h2>
+Are we acquiring information for the right goal?
+</h2>
+<p>
+Ranking-aligned active evaluation with RankBALD.
+</p>
+</div>
+<a href="../rankbald-active-evaluation/index.html">
+View next essay
+</a>
+</nav>
+      </div>
+    </article>
+  </main>
+  <footer class="blog-footer article-footer">
+  <span>
+  © Bonaventure F. P. Dossou
+  </span>
+  <div class="footer-links">
+<a href="../index.html">
+All essays
+</a>
+<a href="../../index.html#top">
+Main website
+</a>
+<a href="https://scholar.google.com/citations?user=2J581k0AAAAJ&amp;hl=en">
+Google Scholar
+</a>
+<a href="https://github.com/bonaventuredossou">
+GitHub
+</a>
+<a href="https://www.linkedin.com/in/bonaventuredossou/">
+LinkedIn
+</a>
+<a href="mailto:bonaventure.dossou@mila.quebec">
+Email
+</a>
+</div>
+</footer>
+  <script src="../assets/blog.js">
+  </script>
+  <script>
+    (function () {
+      "use strict";
+      const byId = (id) => document.getElementById(id);
+      const scenarioSelect = byId("cost-scenario-select");
+      const rankingSelect = byId("cost-ranking-select");
+      const budgetSlider = byId("cost-budget-slider");
+      const candidatesRoot = byId("cost-candidates");
+      const preselectCount = 10;
+      const shortlistCount = 7;
+      const totalGlobalBudget = 12;
+      let generation = 0;
+      let activeCostStage = "preselect";
+      let remainingGlobalBudget = totalGlobalBudget;
+      let acquisitionRound = 1;
+      let currentBatchCost = 0;
+      let currentBatchSize = 0;
+      let roundStatusMessage = "Inspect the three stages, then acquire the selected batch to spend from the global budget.";
+
+      const toyItems = [
+        { id: "A", value: 14, cost: 8 },
+        { id: "B", value: 10, cost: 5 },
+        { id: "C", value: 10, cost: 5 },
+        { id: "D", value: 7, cost: 4 },
+        { id: "E", value: 6, cost: 3 },
+        { id: "F", value: 2, cost: 1 }
+      ];
+      const toySelection = new Set();
+      let toyRevealOptimal = false;
+      let dpStep = 0;
+
+      function buildIntegerKnapsackTable(items, budget) {
+        const table = Array.from(
+          { length: items.length + 1 },
+          () => Array(budget + 1).fill(0)
+        );
+
+        for (let row = 1; row <= items.length; row += 1) {
+          const item = items[row - 1];
+          for (let capacity = 0; capacity <= budget; capacity += 1) {
+            table[row][capacity] = table[row - 1][capacity];
+            if (item.cost <= capacity) {
+              table[row][capacity] = Math.max(
+                table[row][capacity],
+                table[row - 1][capacity - item.cost] + item.value
+              );
+            }
+          }
+        }
+
+        return table;
+      }
+
+      function solveIntegerKnapsack(items, budget) {
+        const table = buildIntegerKnapsackTable(items, budget);
+
+        const selected = new Set();
+        let capacity = budget;
+        for (let row = items.length; row > 0; row -= 1) {
+          if (table[row][capacity] !== table[row - 1][capacity]) {
+            const item = items[row - 1];
+            selected.add(item.id);
+            capacity -= item.cost;
+          }
+        }
+        return selected;
+      }
+
+      function renderToyItems(optimalIds) {
+        const root = byId("toy-items");
+        root.textContent = "";
+
+        toyItems.forEach((item, index) => {
+          const selected = toySelection.has(item.id);
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `toy-item${selected ? " selected" : ""}${optimalIds && optimalIds.has(item.id) ? " optimal" : ""}`;
+          button.setAttribute("aria-pressed", String(selected));
+          button.innerHTML = `<strong>Item ${item.id}</strong><span>Value v<sub>${index + 1}</sub> = ${item.value}</span><span>Cost c<sub>${index + 1}</sub> = ${item.cost}</span><span class="toy-bit">z<sub>${index + 1}</sub> = ${selected ? 1 : 0}</span>`;
+          button.addEventListener("click", () => {
+            if (toySelection.has(item.id)) toySelection.delete(item.id);
+            else toySelection.add(item.id);
+            toyRevealOptimal = false;
+            renderToy("manual");
+          });
+          root.appendChild(button);
+        });
+      }
+
+      function renderDPTable() {
+        const budget = Number(byId("toy-budget-slider").value);
+        const tableData = buildIntegerKnapsackTable(toyItems, budget);
+        const table = byId("dp-table");
+        table.textContent = "";
+
+        const header = document.createElement("tr");
+        const corner = document.createElement("th");
+        corner.textContent = "i / w";
+        header.appendChild(corner);
+        for (let capacity = 0; capacity <= budget; capacity += 1) {
+          const cell = document.createElement("th");
+          cell.textContent = String(capacity);
+          header.appendChild(cell);
+        }
+        table.appendChild(header);
+
+        for (let row = 0; row <= dpStep; row += 1) {
+          const tr = document.createElement("tr");
+          if (row === dpStep) tr.className = "active-row";
+          const label = document.createElement("th");
+          label.textContent = row === 0 ? "none" : toyItems[row - 1].id;
+          tr.appendChild(label);
+          for (let capacity = 0; capacity <= budget; capacity += 1) {
+            const cell = document.createElement("td");
+            cell.textContent = String(tableData[row][capacity]);
+            if (row === dpStep && capacity === budget) cell.className = "target-cell";
+            tr.appendChild(cell);
+          }
+          table.appendChild(tr);
+        }
+
+        byId("dp-step-output").textContent = dpStep === 0 ? "Start" : `Item ${dpStep} of ${toyItems.length}`;
+        byId("dp-previous").disabled = dpStep === 0;
+        byId("dp-next").disabled = dpStep === toyItems.length;
+
+        if (dpStep === 0) {
+          byId("dp-decision").textContent = "With no items, the best value is zero at every capacity.";
+          return;
+        }
+
+        const item = toyItems[dpStep - 1];
+        const skip = tableData[dpStep - 1][budget];
+        if (item.cost > budget) {
+          byId("dp-decision").textContent = `Item ${item.id} costs ${item.cost}, so it cannot fit within capacity ${budget}. The solver carries forward the skip value ${skip}.`;
+          return;
+        }
+
+        const take = item.value + tableData[dpStep - 1][budget - item.cost];
+        const choice = take > skip ? "take" : "skip";
+        byId("dp-decision").textContent = `For item ${item.id} at capacity ${budget}: skip = ${skip}; take = ${item.value} + DP(${dpStep - 1}, ${budget - item.cost}) = ${take}. The better decision here is ${choice}, giving ${tableData[dpStep][budget]}.`;
+      }
+
+      function renderToy(mode) {
+        const budget = Number(byId("toy-budget-slider").value);
+        const selectedItems = toyItems.filter((item) => toySelection.has(item.id));
+        const totalValue = selectedItems.reduce((sum, item) => sum + item.value, 0);
+        const totalCost = selectedItems.reduce((sum, item) => sum + item.cost, 0);
+        const feasible = totalCost <= budget;
+        const optimal = solveIntegerKnapsack(toyItems, budget);
+        const optimalItems = toyItems.filter((item) => optimal.has(item.id));
+        const optimalValue = optimalItems.reduce((sum, item) => sum + item.value, 0);
+        const bits = toyItems.map((item) => toySelection.has(item.id) ? 1 : 0);
+        const usedPercentage = Math.min(100, totalCost / budget * 100);
+
+        byId("toy-budget-value").textContent = String(budget);
+        byId("toy-selected").textContent = selectedItems.length ? selectedItems.map((item) => item.id).join(", ") : "None";
+        byId("toy-value").textContent = String(totalValue);
+        byId("toy-cost").textContent = `${totalCost} / ${budget}`;
+        byId("toy-equation").textContent = `z = [${bits.join(", ")}], value = ${totalValue}, cost = ${totalCost}`;
+        byId("toy-capacity-label").textContent = `${totalCost} of ${budget}`;
+        byId("toy-capacity-fill").style.width = `${usedPercentage}%`;
+        byId("toy-capacity-fill").className = `capacity-fill${feasible ? "" : " over"}`;
+        byId("toy-capacity-overflow").textContent = feasible ? `${budget - totalCost} capacity remains.` : `${totalCost - budget} units over capacity.`;
+
+        const status = byId("toy-status");
+        status.textContent = feasible ? "Feasible" : "Over budget";
+        status.className = feasible ? "feasible" : "over";
+
+        const message = byId("toy-message");
+        message.className = "toy-message";
+
+        if (!feasible) {
+          message.textContent = `This subset is invalid because cost ${totalCost} exceeds budget ${budget}. Remove at least one item.`;
+          message.classList.add("toy-feedback-bad");
+        } else if (mode === "solved") {
+          message.textContent = `The optimal feasible subset is {${optimalItems.map((item) => item.id).join(", ")}} with value ${optimalValue}. No feasible subset has a greater value.`;
+          message.classList.add("toy-feedback-good");
+        } else if (mode === "checked" && totalValue === optimalValue) {
+          message.textContent = `Correct. Your subset is feasible and optimal for budget ${budget}.`;
+          message.classList.add("toy-feedback-good");
+        } else if (mode === "checked") {
+          message.textContent = `Your subset is feasible, but it is not optimal. Its value is ${totalValue}. Try a different combination or reveal the answer.`;
+          message.classList.add("toy-feedback-warn");
+        } else if (mode === "greedy") {
+          message.textContent = `Greedy highest-value-first produced value ${totalValue}. Check it to see whether this locally attractive choice is globally optimal.`;
+          message.classList.add("toy-feedback-warn");
+        } else {
+          message.textContent = "Your selection is feasible. Check it when you think you have found the best combination.";
+        }
+
+        renderToyItems(toyRevealOptimal ? optimal : null);
+        if (byId("dp-explainer").classList.contains("open")) renderDPTable();
+      }
+
+      byId("toy-budget-slider").addEventListener("input", () => {
+        toySelection.clear();
+        toyRevealOptimal = false;
+        dpStep = 0;
+        renderToy("manual");
+      });
+      byId("toy-reset").addEventListener("click", () => {
+        toySelection.clear();
+        toyRevealOptimal = false;
+        dpStep = 0;
+        renderToy("manual");
+      });
+      byId("toy-greedy").addEventListener("click", () => {
+        const budget = Number(byId("toy-budget-slider").value);
+        let used = 0;
+        toySelection.clear();
+        [...toyItems].sort((a, b) => b.value - a.value).forEach((item) => {
+          if (used + item.cost <= budget) {
+            toySelection.add(item.id);
+            used += item.cost;
+          }
+        });
+        toyRevealOptimal = false;
+        renderToy("greedy");
+      });
+      byId("toy-check").addEventListener("click", () => renderToy("checked"));
+      byId("toy-solve").addEventListener("click", () => {
+        const optimal = solveIntegerKnapsack(toyItems, Number(byId("toy-budget-slider").value));
+        toySelection.clear();
+        optimal.forEach((id) => toySelection.add(id));
+        toyRevealOptimal = true;
+        renderToy("solved");
+      });
+      byId("toy-explain").addEventListener("click", () => {
+        const panel = byId("dp-explainer");
+        panel.classList.toggle("open");
+        byId("toy-explain").textContent = panel.classList.contains("open") ? "Hide solver explanation" : "Explain the solver";
+        if (panel.classList.contains("open")) renderDPTable();
+      });
+      byId("dp-previous").addEventListener("click", () => {
+        dpStep = Math.max(0, dpStep - 1);
+        renderDPTable();
+      });
+      byId("dp-next").addEventListener("click", () => {
+        dpStep = Math.min(toyItems.length, dpStep + 1);
+        renderDPTable();
+      });
+      byId("mapping-toggle").addEventListener("click", () => {
+        const panel = byId("mapping-panel");
+        panel.classList.toggle("revealed");
+        byId("mapping-toggle").textContent = panel.classList.contains("revealed") ? "Hide the mapping" : "Show the mapping";
+      });
+
+      const scenarioDescriptions = {
+        varying: "Scenario 1 assigns non-uniform costs directly. As in the experiments, the costs are normalized to have an average of 1.0.",
+        reliability: "Scenario 2 makes examples assigned to more reliable annotators more expensive.",
+        difficulty: "Scenario 3 makes harder examples, represented here by higher perplexity, more expensive."
+      };
+
+      function seededValue(index, salt) {
+        const value = Math.sin((index + 1) * 91.37 + (generation + 1) * 47.11 + salt * 13.73) * 43758.5453;
+        return value - Math.floor(value);
+      }
+
+      function normalizeCosts(rawCosts) {
+        const mean = rawCosts.reduce((sum, value) => sum + value, 0) / rawCosts.length;
+        return rawCosts.map((value) => value / mean);
+      }
+
+      function makeCandidates() {
+        const base = Array.from({ length: 12 }, (_, index) => ({
+          index,
+          informativeness: 5.1 + seededValue(index, 1) * 4.8,
+          reliability: 1 + Math.floor(seededValue(index, 2) * 5),
+          difficulty: 0.18 + seededValue(index, 3) * 0.82,
+          directCost: 0.55 + seededValue(index, 4) * 4.9
+        }));
+        let rawCosts;
+        if (scenarioSelect.value === "reliability") rawCosts = base.map((item) => Math.exp(item.reliability / 2.15));
+        else if (scenarioSelect.value === "difficulty") rawCosts = base.map((item) => Math.exp(0.4 + item.difficulty * 1.85));
+        else rawCosts = base.map((item) => item.directCost);
+        const costs = normalizeCosts(rawCosts);
+        return base.map((item, index) => ({ ...item, id: `x${index + 1}`, cost: costs[index] }));
+      }
+
+      function solveKnapsack(items, budget) {
+        const capacity = Math.floor(budget * 100);
+        const table = Array.from({ length: items.length + 1 }, () => Array(capacity + 1).fill(0));
+        for (let row = 1; row <= items.length; row += 1) {
+          const item = items[row - 1];
+          const weight = Math.max(1, Math.ceil(item.cost * 100));
+          const value = Math.round(item.informativeness * 100);
+          for (let available = 0; available <= capacity; available += 1) {
+            table[row][available] = table[row - 1][available];
+            if (weight <= available) table[row][available] = Math.max(table[row][available], table[row - 1][available - weight] + value);
+          }
+        }
+        const selected = new Set();
+        let available = capacity;
+        for (let row = items.length; row > 0; row -= 1) {
+          if (table[row][available] !== table[row - 1][available]) {
+            const item = items[row - 1];
+            selected.add(item.id);
+            available -= Math.max(1, Math.ceil(item.cost * 100));
+          }
+        }
+        return selected;
+      }
+
+      function metricLine(label, value, className, width) {
+        const row = document.createElement("div");
+        row.className = "cost-candidate-metric";
+        const text = document.createElement("span");
+        text.textContent = `${label}: ${value}`;
+        const track = document.createElement("span");
+        track.className = "cost-mini-track";
+        const fill = document.createElement("span");
+        fill.className = className;
+        fill.style.width = `${Math.min(100, Math.max(3, width))}%`;
+        track.appendChild(fill);
+        row.append(text, track);
+        return row;
+      }
+
+      function renderLab() {
+        const items = makeCandidates();
+        const requestedLimit = Number(budgetSlider.value);
+        const budget = Math.min(requestedLimit, remainingGlobalBudget);
+        const preselected = [...items]
+          .sort((a, b) => b.informativeness - a.informativeness)
+          .slice(0, preselectCount);
+        const preselectedIds = new Set(preselected.map((item) => item.id));
+        const ranked = [...preselected].sort((a, b) => rankingSelect.value === "lc" ? a.cost - b.cost || b.informativeness - a.informativeness : b.informativeness - a.informativeness || a.cost - b.cost);
+        const shortlist = ranked.slice(0, shortlistCount);
+        const shortlistIds = new Set(shortlist.map((item) => item.id));
+        const selectedIds = solveKnapsack(shortlist, budget);
+        const chosen = items.filter((item) => selectedIds.has(item.id));
+        const totalValue = chosen.reduce((sum, item) => sum + item.informativeness, 0);
+        const totalCost = chosen.reduce((sum, item) => sum + item.cost, 0);
+        currentBatchCost = totalCost;
+        currentBatchSize = chosen.length;
+
+        byId("cost-budget-value").textContent = budget.toFixed(2);
+        byId("cost-round").textContent = `${Math.min(acquisitionRound, 5)} / 5`;
+        byId("global-budget-remaining").textContent = remainingGlobalBudget.toFixed(2);
+        byId("global-budget-fill").style.width = `${Math.max(0, remainingGlobalBudget / totalGlobalBudget * 100)}%`;
+        candidatesRoot.textContent = "";
+
+        items.forEach((item) => {
+          const isPreselected = preselectedIds.has(item.id);
+          const isShortlisted = shortlistIds.has(item.id);
+          const isSelected = selectedIds.has(item.id);
+          const card = document.createElement("article");
+          let stageClass = " stage-muted";
+          let statusText = "Pool";
+
+          if (activeCostStage === "preselect") {
+            if (isPreselected) stageClass = " preselected stage-focus";
+            statusText = isPreselected ? "Preselected" : "Not selected";
+          } else if (activeCostStage === "rank") {
+            if (isShortlisted) stageClass = " shortlisted stage-focus";
+            else if (isPreselected) stageClass = " preselected stage-muted";
+            statusText = isShortlisted ? "Top k" : isPreselected ? "Ranked out" : "Filtered";
+          } else {
+            if (isSelected) stageClass = " shortlisted selected stage-focus";
+            else if (isShortlisted) stageClass = " shortlisted";
+            statusText = isSelected ? "Batch Bʳ" : isShortlisted ? "Affordable alternative" : "Filtered";
+          }
+
+          card.className = `cost-candidate${stageClass}`;
+          const heading = document.createElement("div");
+          heading.className = "cost-candidate-heading";
+          const title = document.createElement("strong");
+          title.textContent = item.id;
+          const status = document.createElement("span");
+          status.className = "cost-candidate-status";
+          status.textContent = statusText;
+          heading.append(title, status);
+          card.appendChild(heading);
+          card.appendChild(metricLine("Information", item.informativeness.toFixed(2), "cost-info-fill", item.informativeness * 10));
+          card.appendChild(metricLine("Cost", item.cost.toFixed(2), "cost-price-fill", item.cost / 2.5 * 100));
+          if (scenarioSelect.value === "reliability") {
+            const detail = document.createElement("small");
+            detail.textContent = `Annotator reliability: ${item.reliability}/5`;
+            card.appendChild(detail);
+          } else if (scenarioSelect.value === "difficulty") {
+            const detail = document.createElement("small");
+            detail.textContent = `Relative perplexity: ${Math.round(item.difficulty * 100)}`;
+            card.appendChild(detail);
+          }
+          candidatesRoot.appendChild(card);
+        });
+
+        byId("cost-selected-count").textContent = activeCostStage === "knapsack" ? String(chosen.length) : "Revealed at Stage 3";
+        byId("cost-selected-value").textContent = activeCostStage === "knapsack" ? totalValue.toFixed(2) : "Hidden";
+        byId("cost-selected-cost").textContent = activeCostStage === "knapsack" ? `${totalCost.toFixed(2)} / ${budget.toFixed(2)}` : `Limit ${budget.toFixed(2)}`;
+        byId("cost-scenario-note").textContent = scenarioDescriptions[scenarioSelect.value];
+        byId("cost-selection-note").textContent = rankingSelect.value === "hs" ? `HS ranks by informativeness, keeps ${shortlistCount} candidates, then the knapsack solver finds the highest-value affordable batch.` : `LC ranks by cost, keeps ${shortlistCount} candidates, then the knapsack solver finds the highest-value affordable batch.`;
+        byId("cost-round-note").textContent = roundStatusMessage;
+
+        const stageDescriptions = {
+          preselect: `Stage 1: BatchBALD scores the pool and keeps the ${preselectCount} most informative candidates. Blue outlines show the preselected set A.`,
+          rank: rankingSelect.value === "hs" ? `Stage 2: HS orders A by informativeness and keeps the top ${shortlistCount} candidates as Aᵏ.` : `Stage 2: LC orders A by annotation cost and keeps the ${shortlistCount} cheapest candidates as Aᵏ.`,
+          knapsack: `Stage 3: the 0-1 knapsack solver chooses the subset Bʳ with the greatest summed information under the ${budget.toFixed(2)} spending limit.`
+        };
+        byId("cost-stage-explanation").textContent = stageDescriptions[activeCostStage];
+        document.querySelectorAll("[data-cost-stage]").forEach((button) => button.classList.toggle("active", button.dataset.costStage === activeCostStage));
+
+        const acquireButton = byId("cost-acquire");
+        const finished = acquisitionRound > 5 || remainingGlobalBudget < 0.01;
+        acquireButton.disabled = finished || currentBatchSize === 0 || activeCostStage !== "knapsack";
+        acquireButton.textContent = finished
+          ? "Simulation complete"
+          : activeCostStage !== "knapsack"
+            ? "View Stage 3 to acquire"
+            : currentBatchSize === 0
+              ? "No affordable batch at this limit"
+              : `Acquire Bʳ for ${currentBatchCost.toFixed(2)}`;
+      }
+
+      function resetRoundSimulation() {
+        remainingGlobalBudget = totalGlobalBudget;
+        acquisitionRound = 1;
+        generation = 0;
+        activeCostStage = "preselect";
+        budgetSlider.max = "6";
+        budgetSlider.value = "2.5";
+        roundStatusMessage = "The global budget has been restored. Inspect the stages, then acquire Bʳ.";
+        renderLab();
+      }
+
+      scenarioSelect.addEventListener("change", resetRoundSimulation);
+      rankingSelect.addEventListener("change", resetRoundSimulation);
+      budgetSlider.addEventListener("input", renderLab);
+      byId("cost-regenerate").addEventListener("click", () => {
+        generation += 1;
+        activeCostStage = "preselect";
+        roundStatusMessage = `A new candidate pool was generated for round ${Math.min(acquisitionRound, 5)}.`;
+        renderLab();
+      });
+      document.querySelectorAll("[data-cost-stage]").forEach((button) => {
+        button.addEventListener("click", () => {
+          activeCostStage = button.dataset.costStage;
+          renderLab();
+        });
+      });
+      byId("cost-acquire").addEventListener("click", () => {
+        if (
+          activeCostStage !== "knapsack" ||
+          currentBatchSize === 0 ||
+          acquisitionRound > 5 ||
+          currentBatchCost > remainingGlobalBudget + 1e-9
+        ) return;
+        const completedRound = acquisitionRound;
+        remainingGlobalBudget = Math.max(0, remainingGlobalBudget - currentBatchCost);
+        acquisitionRound += 1;
+        generation += 1;
+        activeCostStage = "preselect";
+        const nextMaximum = Math.max(0.25, Math.min(6, remainingGlobalBudget));
+        budgetSlider.max = String(nextMaximum);
+        if (Number(budgetSlider.value) > nextMaximum) budgetSlider.value = String(nextMaximum);
+        roundStatusMessage = acquisitionRound > 5 || remainingGlobalBudget < 0.01 ? `Round ${completedRound} was acquired for ${currentBatchCost.toFixed(2)}. The simulation is complete.` : `Round ${completedRound} spent ${currentBatchCost.toFixed(2)}. The remaining global budget carries into round ${acquisitionRound}.`;
+        renderLab();
+      });
+      byId("cost-reset-rounds").addEventListener("click", resetRoundSimulation);
+
+      const results = {
+        "1": { name: "varying costs", values: { "1": { hs: 2.97, lc: 2.06 }, "2": { hs: 4.92, lc: 4.52 }, "3": { hs: 10.64, lc: 10.69 } } },
+        "2": { name: "annotator reliability costs", values: { "1": { hs: 2.59, lc: 1.87 }, "2": { hs: 6.97, lc: 6.56 }, "3": { hs: 11.98, lc: 11.74 } } },
+        "3": { name: "sample difficulty costs", values: { "1": { hs: 1.55, lc: 1.29 }, "2": { hs: 5.96, lc: 5.58 }, "3": { hs: 12.65, lc: 12.84 } } }
+      };
+      const levelNames = { "1": "baseline", "2": "moderate", "3": "high" };
+
+      function renderResults() {
+        const scenarioKey = byId("cost-results-scenario").value;
+        const levelKey = byId("cost-results-level").value;
+        const scenario = results[scenarioKey];
+        const values = scenario.values[levelKey];
+        byId("gain-hs-bar").style.width = `${values.hs / 13 * 100}%`;
+        byId("gain-lc-bar").style.width = `${values.lc / 13 * 100}%`;
+        byId("gain-hs-value").textContent = `+${values.hs.toFixed(2)}%`;
+        byId("gain-lc-value").textContent = `+${values.lc.toFixed(2)}%`;
+        byId("gain-note").textContent = `Relative F1 improvement over BatchBALD for ${scenario.name} at ${levelNames[levelKey]} cost extremity.`;
+      }
+
+      byId("cost-results-scenario").addEventListener("change", renderResults);
+      byId("cost-results-level").addEventListener("change", renderResults);
+      renderToy("manual");
+      renderLab();
+      renderResults();
+    }());
+  </script>
+</body>
+</html>

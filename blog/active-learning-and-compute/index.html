@@ -1,0 +1,1770 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  />
+
+  <meta
+    name="description"
+    content="An interactive introduction to active learning, uncertainty sampling with MC Dropout, and continual finetuning for resource-constrained African NLP."
+  />
+
+  <meta
+    property="og:title"
+    content="Active Learning Saves Labels. But What About Compute?"
+  />
+
+  <meta
+    property="og:description"
+    content="How MC Dropout guides batch acquisition and how continual finetuning reduces the computational cost of active learning."
+  />
+
+  <meta
+    property="og:type"
+    content="article"
+  />
+
+  <meta
+    property="og:url"
+    content="https://bonaventuredossou.github.io/blog/active-learning-and-compute/index.html"
+  />
+
+  <title>
+    Active Learning Saves Labels. But What About Compute? |
+    Bonaventure F. P. Dossou
+  </title>
+
+  <link
+    rel="canonical"
+    href="https://bonaventuredossou.github.io/blog/active-learning-and-compute/index.html"
+  />
+
+  <link
+    rel="icon"
+    href="../../images/bd.ico"
+  />
+
+  <link
+    rel="stylesheet"
+    href="../assets/blog.css"
+  />
+
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [
+          ["\\(", "\\)"]
+        ],
+        displayMath: [
+          ["\\[", "\\]"]
+        ]
+      },
+      options: {
+        skipHtmlTags: [
+          "script",
+          "noscript",
+          "style",
+          "textarea",
+          "pre",
+          "code"
+        ]
+      }
+    };
+  </script>
+
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+  ></script>
+
+  <script
+    defer
+    src="../assets/blog.js"
+  ></script>
+</head>
+
+<body class="article-page">
+  <header class="site-header article-header">
+    <a
+      class="site-brand"
+      href="../../index.html"
+      aria-label="Bonaventure F. P. Dossou home"
+    >
+      <span class="brand-mark">BD</span>
+      <span>Bonaventure F. P. Dossou</span>
+    </a>
+
+    <nav aria-label="Primary navigation">
+      <a href="../../index.html#top">
+        About
+      </a>
+
+      <a href="../../index.html#research">
+        Research
+      </a>
+
+      <a href="../../index.html#education">
+        Education
+      </a>
+
+      <a href="../../index.html#experience">
+        Experience
+      </a>
+
+      <a href="../../index.html#publications">
+        Publications
+      </a>
+
+      <a href="../../index.html#recognition">
+        Awards
+      </a>
+
+      <a href="../../index.html#skills">
+        Skills
+      </a>
+
+      <a
+        class="active"
+        href="../index.html"
+      >
+        Blog
+      </a>
+    </nav>
+  </header>
+
+  <div
+    class="reading-progress"
+    aria-hidden="true"
+  >
+    <span id="reading-progress-bar"></span>
+  </div>
+
+  <main>
+    <article>
+      <header class="article-hero">
+        <div class="article-hero-grid">
+          <div class="article-hero-copy">
+            <a
+              class="series-link"
+              href="../index.html"
+            >
+              Active Learning Under Real Constraints
+              <span>01 / 03</span>
+            </a>
+
+            <h1>
+              Active Learning Saves Labels.
+              <br />
+              <em>But What About Compute?</em>
+            </h1>
+
+            <p class="dek">
+              A visual introduction to uncertainty-based
+              batch acquisition and the hidden cost of
+              repeatedly learning from everything we
+              have already labeled.
+            </p>
+
+            <div class="byline">
+              <span>
+                By
+                <strong>
+                  Bonaventure F. P. Dossou
+                </strong>
+              </span>
+
+              <span>September 2026</span>
+              <span>Interactive essay</span>
+            </div>
+
+            <div class="hero-actions">
+              <a
+                class="primary-link"
+                href="index.html#why-active-learning"
+              >
+                Begin the essay
+                <span aria-hidden="true">
+                  &darr;
+                </span>
+              </a>
+
+              <a
+                href="https://aclanthology.org/2025.acl-srw.5/"
+              >
+                Read the paper
+              </a>
+            </div>
+          </div>
+
+          <div
+            class="hero-orbit"
+            aria-hidden="true"
+          >
+            <div class="hero-orbit-label">
+              Which samples belong in the next batch?
+            </div>
+
+            <div class="ring ring-a"></div>
+            <div class="ring ring-b"></div>
+            <div class="ring ring-c"></div>
+
+            <span class="point class-a p1"></span>
+            <span class="point class-a p2"></span>
+            <span class="point class-a p3"></span>
+
+            <span class="point class-b p4"></span>
+            <span class="point class-b p5"></span>
+            <span class="point class-b p6"></span>
+
+            <span class="point unknown p7">
+              ?
+            </span>
+
+            <div class="hero-divider"></div>
+          </div>
+        </div>
+      </header>
+
+      <aside
+        class="article-map"
+        aria-label="Article map"
+      >
+        <a href="index.html#why-active-learning">
+          <span>01</span>
+          Why active learning?
+        </a>
+
+        <a href="index.html#uncertainty">
+          <span>02</span>
+          How is the batch acquired?
+        </a>
+
+        <a href="index.html#hidden-cost">
+          <span>03</span>
+          The hidden compute cost
+        </a>
+
+        <a href="index.html#findings">
+          <span>04</span>
+          What we found
+        </a>
+      </aside>
+
+      <div class="article-body">
+        <section
+          class="opening"
+          id="why-active-learning"
+        >
+          <div class="section-marker">
+            01: The data problem
+          </div>
+
+          <h2>
+            If you can label only 1,000 examples,
+            <em>which</em> 1,000 should they be?
+          </h2>
+
+          <p class="lead">
+            Machine learning often starts from an
+            asymmetry: unlabeled data can be plentiful,
+            but useful labels are expensive. They may
+            require a fluent speaker, a clinician, a
+            scientist, or simply time that a team does
+            not have.
+          </p>
+
+          <p>
+            Random sampling spends the annotation
+            budget without asking whether one sample is
+            more useful than another. Active learning
+            makes a different bet: score the unlabeled
+            samples according to their expected
+            usefulness, acquire a small batch of the
+            most informative samples, annotate that
+            batch, and then update the model.
+          </p>
+
+          <div class="definition-card">
+            <span class="definition-label">
+              The central decision
+            </span>
+
+            <p>
+              Active learning asks
+              <strong>
+                which individually scored samples should
+                form the next acquisition batch
+              </strong>.
+              Samples receive separate uncertainty
+              scores, but the model update happens only
+              after the complete batch has been selected
+              and annotated.
+            </p>
+          </div>
+
+          <div
+            class="loop-strip"
+            aria-label="The active learning loop"
+          >
+            <div>
+              <span>1</span>
+              <strong>Train</strong>
+              <small>on the current labeled set</small>
+            </div>
+
+            <i aria-hidden="true">
+              &rarr;
+            </i>
+
+            <div>
+              <span>2</span>
+              <strong>Score</strong>
+              <small>every sample in the pool</small>
+            </div>
+
+            <i aria-hidden="true">
+              &rarr;
+            </i>
+
+            <div>
+              <span>3</span>
+              <strong>Acquire</strong>
+              <small>the top 100 as one batch</small>
+            </div>
+
+            <i aria-hidden="true">
+              &rarr;
+            </i>
+
+            <div>
+              <span>4</span>
+              <strong>Update</strong>
+              <small>once using the acquired batch</small>
+            </div>
+          </div>
+
+          <div class="equation-card">
+            <div class="equation">
+              \[
+                Q'_r
+                =
+                \operatorname{TopK}_{x\in U}
+                \bigl(u_{\mathrm{MC}}(x), 100\bigr).
+              \]
+            </div>
+
+            <p>
+              Every sample \(x\) in the unlabeled pool
+              \(U\) receives its own uncertainty score.
+              The 100 highest-scoring samples form the
+              acquisition batch \(Q'_r\).
+            </p>
+          </div>
+
+          <div
+            class="interactive-card wide"
+            id="al-playground"
+          >
+            <div class="interactive-heading">
+              <div>
+                <span class="interactive-kicker">
+                  Try it: Active learning playground
+                </span>
+
+                <h3>
+                  Build the next acquisition batch
+                </h3>
+
+                <p>
+                  This toy example uses a batch of four
+                  instead of 100. The strategy scores
+                  the individual pool points, identifies
+                  the four points that form the next
+                  batch, and updates the model only
+                  after the batch is acquired.
+                </p>
+              </div>
+
+              <button
+                class="quiet-button"
+                id="al-reset"
+                type="button"
+              >
+                Reset
+              </button>
+            </div>
+
+            <div class="playground-layout">
+              <div class="canvas-wrap">
+                <canvas
+                  id="al-canvas"
+                  width="760"
+                  height="440"
+                  aria-label="A toy two-class batch active learning simulation"
+                ></canvas>
+
+                <div class="canvas-legend">
+                  <span>
+                    <i class="legend-dot blue"></i>
+                    Class A
+                  </span>
+
+                  <span>
+                    <i class="legend-dot coral"></i>
+                    Class B
+                  </span>
+
+                  <span>
+                    <i class="legend-ring"></i>
+                    Next batch
+                  </span>
+                </div>
+              </div>
+
+              <div class="playground-controls">
+                <fieldset>
+                  <legend>
+                    Acquisition strategy
+                  </legend>
+
+                  <label class="choice">
+                    <input
+                      type="radio"
+                      name="strategy"
+                      value="uncertainty"
+                      checked
+                    />
+
+                    <span>
+                      <strong>
+                        Uncertainty
+                      </strong>
+
+                      <small>
+                        Rank samples near the current
+                        boundary
+                      </small>
+                    </span>
+                  </label>
+
+                  <label class="choice">
+                    <input
+                      type="radio"
+                      name="strategy"
+                      value="random"
+                    />
+
+                    <span>
+                      <strong>
+                        Random
+                      </strong>
+
+                      <small>
+                        Ignore the uncertainty scores
+                      </small>
+                    </span>
+                  </label>
+                </fieldset>
+
+                <button
+                  class="action-button"
+                  id="al-acquire"
+                  type="button"
+                >
+                  Acquire next batch of 4
+                </button>
+
+                <div class="metric-pair">
+                  <div>
+                    <span id="al-labeled">
+                      8
+                    </span>
+
+                    <small>
+                      labels seen
+                    </small>
+                  </div>
+
+                  <div>
+                    <span id="al-accuracy">
+                      Calculating
+                    </span>
+
+                    <small>
+                      pool accuracy
+                    </small>
+                  </div>
+                </div>
+
+                <p
+                  class="control-note"
+                  id="al-note"
+                >
+                  Gold rings mark the four individually
+                  scored samples that form the next
+                  acquisition batch.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p>
+            The toy setting compresses the idea into two
+            dimensions, but the process is the same in
+            NLP. We might have a large pool of news
+            articles, speech segments, or clinical notes
+            and a limited annotation budget. Each
+            sample receives an uncertainty score. The
+            highest-scoring samples are then collected
+            into the batch used for the next model
+            update.
+          </p>
+        </section>
+
+        <section id="uncertainty">
+          <div class="section-marker">
+            02: The acquisition signal
+          </div>
+
+          <h2>
+            How do we identify the samples that belong
+            in the next batch?
+          </h2>
+
+          <p>
+            A common answer is
+            <strong>uncertainty sampling</strong>.
+            In binary classification, a prediction of
+            50/50 is less certain than a prediction of
+            99/1. Predictive entropy turns that
+            intuition into a score:
+          </p>
+
+          <div class="equation-card">
+            <div class="equation">
+              \[
+                H[y\mid x]
+                =
+                -\sum_{c=1}^{C}
+                p(y=c\mid x)
+                \log p(y=c\mid x).
+              \]
+            </div>
+
+            <p>
+              Entropy is largest when probability is
+              spread evenly across classes and shrinks
+              as one class dominates.
+            </p>
+          </div>
+
+          <div
+            class="interactive-card compact"
+            id="entropy-explorer"
+          >
+            <div class="interactive-heading">
+              <div>
+                <span class="interactive-kicker">
+                  Move it: Entropy explorer
+                </span>
+
+                <h3>
+                  From unsure to confident
+                </h3>
+              </div>
+
+              <output
+                id="entropy-value"
+                for="probability-slider"
+              >
+                0.693 nats
+              </output>
+            </div>
+
+            <div class="probability-display">
+              <div class="probability-bar">
+                <span id="probability-a"></span>
+                <span id="probability-b"></span>
+              </div>
+
+              <div class="probability-labels">
+                <strong id="probability-a-label">
+                  Class A: 50%
+                </strong>
+
+                <strong id="probability-b-label">
+                  Class B: 50%
+                </strong>
+              </div>
+            </div>
+
+            <label
+              class="range-label"
+              for="probability-slider"
+            >
+              Probability assigned to Class A
+            </label>
+
+            <input
+              id="probability-slider"
+              type="range"
+              min="50"
+              max="99"
+              value="50"
+              step="1"
+            />
+
+            <div class="entropy-readout">
+              <span>
+                high uncertainty
+              </span>
+
+              <div class="entropy-meter">
+                <i id="entropy-meter-fill"></i>
+              </div>
+
+              <span>
+                low uncertainty
+              </span>
+            </div>
+          </div>
+
+          <h3>
+            But uncertainty has more than one source
+          </h3>
+
+          <p>
+            A sample can be difficult because the
+            observation or label is genuinely ambiguous.
+            This is often called
+            <strong>
+              aleatoric uncertainty
+            </strong>.
+            It can also be difficult because the model
+            has not learned enough yet. This is
+            <strong>
+              epistemic uncertainty
+            </strong>.
+            Additional informative data can reduce the
+            second kind.
+          </p>
+
+          <div class="uncertainty-compare">
+            <article>
+              <span class="uncertainty-icon aleatoric">
+                ≈
+              </span>
+
+              <h4>
+                Aleatoric
+              </h4>
+
+              <p>
+                The plausible models are similarly
+                unsure. The ambiguity is in the
+                observation or its label.
+              </p>
+            </article>
+
+            <article>
+              <span class="uncertainty-icon epistemic">
+                ≠
+              </span>
+
+              <h4>
+                Epistemic
+              </h4>
+
+              <p>
+                The plausible models disagree. The
+                uncertainty reflects knowledge that
+                additional data may help resolve.
+              </p>
+            </article>
+          </div>
+
+          <h3>
+            Approximate uncertainty with MC Dropout
+          </h3>
+
+          <p>
+            A conventional neural network is usually
+            treated as though one fitted parameter
+            vector, \(\theta^*\), is the answer. A
+            Bayesian view instead reasons over
+            plausible parameters after observing data,
+            \(p(\theta\mid\mathcal D)\), and averages
+            their predictions:
+          </p>
+
+          <div class="equation-card accent">
+            <div class="equation">
+              \[
+                p(y\mid x,\mathcal D)
+                =
+                \int
+                p(y\mid x,\theta)
+                p(\theta\mid\mathcal D)
+                d\theta.
+              \]
+            </div>
+
+            <p>
+              The variation across plausible models
+              indicates where the model's knowledge
+              remains fragile.
+            </p>
+          </div>
+
+          <p>
+            For deep networks, the posterior is
+            difficult to compute exactly.
+
+            <a href="https://arxiv.org/abs/1506.02142">
+              Monte Carlo Dropout
+            </a>
+
+            offers a practical approximation. Dropout
+            remains enabled at inference time, and the
+            same sample passes through the network
+            repeatedly. Each dropout mask produces a
+            different stochastic prediction.
+          </p>
+
+          <div
+            class="interactive-card"
+            id="mc-dropout-demo"
+          >
+            <div class="interactive-heading">
+              <div>
+                <span class="interactive-kicker">
+                  Compare it: Ten stochastic passes
+                </span>
+
+                <h3>
+                  Similar predictive means can hide
+                  different patterns
+                </h3>
+
+                <p>
+                  Both examples average to approximately
+                  50/50. Toggle between the cases to
+                  inspect the predictions produced by
+                  the ten stochastic forward passes.
+                </p>
+              </div>
+
+              <div
+                class="segmented-control"
+                role="group"
+                aria-label="Uncertainty type"
+              >
+                <button
+                  type="button"
+                  data-uncertainty="aleatoric"
+                  class="active"
+                >
+                  Ambiguity
+                </button>
+
+                <button
+                  type="button"
+                  data-uncertainty="epistemic"
+                >
+                  Disagreement
+                </button>
+              </div>
+            </div>
+
+            <div class="mc-layout">
+              <div>
+                <div
+                  class="model-votes"
+                  id="model-votes"
+                  aria-label="Predictions from ten stochastic forward passes"
+                ></div>
+
+                <div class="vote-axis">
+                  <span>
+                    Class A
+                  </span>
+
+                  <span>
+                    Class B
+                  </span>
+                </div>
+              </div>
+
+              <div class="mc-summary">
+                <div>
+                  <span>
+                    Predictive mean
+                  </span>
+
+                  <strong id="mc-mean">
+                    50 / 50
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Model disagreement
+                  </span>
+
+                  <strong id="mc-disagreement">
+                    Low
+                  </strong>
+                </div>
+
+                <p id="mc-explanation">
+                  Every plausible model is individually
+                  unsure. More labels may not remove
+                  uncertainty inherent in the sample.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <h3>
+            The acquisition procedure used in the paper
+          </h3>
+
+          <p>
+            At every active learning round, we perform
+            <strong>
+              10 stochastic forward passes
+            </strong>
+            with dropout enabled at inference time. We
+            compute the
+            <strong>
+              average token-level entropy
+            </strong>
+            separately for every sample in the
+            unlabeled pool \(U\).
+          </p>
+
+          <p>
+            We then select the
+            <strong>
+              top 100 most uncertain samples
+            </strong>.
+            These samples collectively form the newly
+            acquired batch \(Q'_r\). After the batch is
+            labeled, it is added to the training set.
+            The model is updated once for that round.
+          </p>
+
+          <div class="definition-card">
+            <span class="definition-label">
+              Sample-wise selection, batch-wise update
+            </span>
+
+            <p>
+              Uncertainty is calculated for each sample.
+              The 100 highest-scoring samples form one
+              acquisition batch. We do not update the
+              model after each individual sample is
+              scored or selected.
+            </p>
+          </div>
+
+          <details class="deep-dive">
+            <summary>
+              <span>
+                Deeper dive
+              </span>
+
+              Where does BALD fit?
+            </summary>
+
+            <div>
+              <p>
+                Predictive entropy and BALD are related,
+                but they are not identical. Bayesian
+                Active Learning by Disagreement targets
+                the information that a sample carries
+                about the model parameters:
+              </p>
+
+              <div class="equation">
+                \[
+                  I(y;\theta\mid x,\mathcal D)
+                  =
+                  H[y\mid x,\mathcal D]
+                  -
+                  \mathbb E_{p(\theta\mid\mathcal D)}
+                  H[y\mid x,\theta].
+                \]
+              </div>
+
+              <p>
+                The first term asks whether the
+                aggregate prediction is uncertain. The
+                second asks whether each plausible model
+                is uncertain on its own. Their
+                difference becomes large when the
+                stochastic models are individually
+                confident but disagree with one another.
+              </p>
+
+              <p>
+                <strong>
+                  Important distinction:
+                </strong>
+
+                the experiments in this paper use
+                uncertainty sampling with MC Dropout
+                and average token-level entropy. They do
+                not use BALD as the acquisition
+                function. BALD becomes central in the
+                later essays on KnapsackBALD and
+                RankBALD.
+              </p>
+            </div>
+          </details>
+        </section>
+
+        <section id="hidden-cost">
+          <div class="section-marker">
+            03: The hidden cost
+          </div>
+
+          <h2>
+            We saved labels. Then we trained on
+            everything again.
+          </h2>
+
+          <p class="lead">
+            Most active learning work focuses on the
+            cost of annotation. Yet every acquisition
+            round also updates the model, and the
+            standard update becomes more expensive as
+            the labeled set grows.
+          </p>
+
+          <p>
+            The acquisition procedure gives us a new
+            batch \(Q'_r\) containing the 100 samples
+            selected during round \(r\). Once that batch
+            is labeled, we must decide how to use it to
+            update the model.
+          </p>
+
+          <div class="contrast-quote">
+            <p>
+              Should the model return to the original
+              checkpoint and relearn from all labeled
+              data, or should it continue from its
+              current state using only the newly
+              acquired batch?
+            </p>
+          </div>
+
+          <p>
+            Our paper compares two update strategies:
+          </p>
+
+          <div class="strategy-grid">
+            <article>
+              <span class="strategy-code">
+                FA
+              </span>
+
+              <h3>
+                Finetuning All
+              </h3>
+
+              <p>
+                Return to the original pretrained
+                checkpoint after every acquisition
+                round and retrain on the full
+                accumulated labeled dataset.
+              </p>
+            </article>
+
+            <article>
+              <span class="strategy-code cf">
+                CF
+              </span>
+
+              <h3>
+                Continual Finetuning
+              </h3>
+
+              <p>
+                Keep the model produced by the previous
+                round and update it using only the most
+                recently acquired batch \(Q'_r\).
+              </p>
+            </article>
+          </div>
+
+          <div class="equation-card accent">
+            <div class="equation">
+              \[
+                \text{FA: }
+                \theta_r
+                =
+                \operatorname{FT}
+                \left(
+                  \theta_0,
+                  D_{\mathrm{train}}^{(r)}
+                \right)
+              \]
+            </div>
+
+            <div class="equation">
+              \[
+                \text{CF: }
+                \theta_r
+                =
+                \operatorname{FT}
+                \left(
+                  \theta_{r-1},
+                  Q'_r
+                \right)
+              \]
+            </div>
+
+            <p>
+              FA restarts from the original pretrained
+              checkpoint \(\theta_0\) and uses all
+              accumulated labeled data. CF continues
+              from \(\theta_{r-1}\) and uses only the
+              latest acquired batch.
+            </p>
+          </div>
+
+          <div
+            class="interactive-card wide"
+            id="finetuning-demo"
+          >
+            <div class="interactive-heading">
+              <div>
+                <span class="interactive-kicker">
+                  Slide it: Update cost over rounds
+                </span>
+
+                <h3>
+                  What passes through the training loop?
+                </h3>
+
+                <p>
+                  This illustrative accounting starts
+                  from 500 labeled samples and acquires
+                  one batch of 100 samples per round.
+                  The measured resource results appear
+                  in the next section.
+                </p>
+              </div>
+
+              <div class="round-badge">
+                Round
+                <strong id="round-value">
+                  1
+                </strong>
+                / 10
+              </div>
+            </div>
+
+            <label
+              class="range-label"
+              for="round-slider"
+            >
+              Acquisition round
+            </label>
+
+            <input
+              id="round-slider"
+              type="range"
+              min="1"
+              max="10"
+              value="1"
+              step="1"
+            />
+
+            <div
+              class="round-ticks"
+              aria-hidden="true"
+            >
+              <span>1</span>
+              <span>2</span>
+              <span>3</span>
+              <span>4</span>
+              <span>5</span>
+              <span>6</span>
+              <span>7</span>
+              <span>8</span>
+              <span>9</span>
+              <span>10</span>
+            </div>
+
+            <div class="training-compare">
+              <article class="training-lane fa-lane">
+                <div class="lane-heading">
+                  <div>
+                    <span>
+                      FA
+                    </span>
+
+                    <strong>
+                      Finetune all
+                    </strong>
+                  </div>
+
+                  <b id="fa-current">
+                    600 examples this round
+                  </b>
+                </div>
+
+                <div
+                  class="batch-track"
+                  id="fa-batches"
+                  aria-label="Data used by Finetuning All"
+                ></div>
+
+                <div class="lane-stat">
+                  <span>
+                    Cumulative example-passes
+                  </span>
+
+                  <strong id="fa-cumulative">
+                    600
+                  </strong>
+                </div>
+              </article>
+
+              <article class="training-lane cf-lane">
+                <div class="lane-heading">
+                  <div>
+                    <span>
+                      CF
+                    </span>
+
+                    <strong>
+                      Continue on the latest batch
+                    </strong>
+                  </div>
+
+                  <b>
+                    100 examples this round
+                  </b>
+                </div>
+
+                <div
+                  class="batch-track"
+                  id="cf-batches"
+                  aria-label="Latest batch used by Continual Finetuning"
+                ></div>
+
+                <div class="lane-stat">
+                  <span>
+                    Cumulative example-passes
+                  </span>
+
+                  <strong id="cf-cumulative">
+                    100
+                  </strong>
+                </div>
+              </article>
+            </div>
+
+            <p class="illustration-note">
+  <strong>D₀</strong> is the initial labeled dataset
+  containing 500 examples.
+
+  <strong>Q'ᵣ</strong> is the batch of 100 examples
+  acquired during active learning round
+  <em>r</em>.
+
+  FA returns to the original pretrained checkpoint
+  and trains on D₀ together with every acquired batch
+  from Q'₁ through Q′ᵣ.
+
+  CF continues from the model produced during the
+  previous round and trains only on the most recently
+  acquired batch Q'ᵣ.
+
+  "Example-passes" is a simplified count for
+  intuition, not the paper's FLOPs measurement.
+</p>
+          </div>
+
+          <div class="experiment-card">
+            <div class="experiment-title">
+              <span>
+                The experiment
+              </span>
+
+              <h3>
+                28 African languages, two datasets,
+                and two update strategies
+              </h3>
+            </div>
+
+            <div class="experiment-stats">
+              <div>
+                <strong>28</strong>
+                <span>languages</span>
+              </div>
+
+              <div>
+                <strong>2</strong>
+                <span>benchmarks</span>
+              </div>
+
+              <div>
+                <strong>10</strong>
+                <span>active learning rounds</span>
+              </div>
+
+              <div>
+                <strong>100</strong>
+                <span>samples per acquired batch</span>
+              </div>
+
+              <div>
+                <strong>10</strong>
+                <span>MC Dropout passes</span>
+              </div>
+            </div>
+
+            <p>
+              We used AfroXLMR-Large for topic
+              classification on MasakhaNEWS and SIB-200.
+              At each round, the 100 samples with the
+              highest average token-level entropy were
+              acquired. We then compared FA and CF
+              while keeping this acquisition procedure
+              fixed.
+            </p>
+          </div>
+        </section>
+
+        <section id="findings">
+          <div class="section-marker">
+            04: What we found
+          </div>
+
+          <h2>
+            Continual finetuning cuts compute, but the
+            answer is not simply “always use CF.”
+          </h2>
+
+          <h3>
+            Finding 1: the resource reduction is
+            substantial
+          </h3>
+
+          <p>
+            Across languages, CF reduced GPU memory,
+            FLOPs, and wall-clock training time by
+            roughly one-third or more. Select the
+            dataset to inspect the measured average
+            reductions.
+          </p>
+
+          <div
+            class="interactive-card results-card"
+            id="savings-explorer"
+          >
+            <div class="interactive-heading">
+              <div>
+                <span class="interactive-kicker">
+                  Measured in the paper: Average
+                  reduction from FA to CF
+                </span>
+
+                <h3>
+                  Compute saved across languages
+                </h3>
+              </div>
+
+              <div
+                class="segmented-control"
+                role="group"
+                aria-label="Dataset"
+              >
+                <button
+                  type="button"
+                  data-dataset="masakha"
+                  class="active"
+                >
+                  MasakhaNEWS
+                </button>
+
+                <button
+                  type="button"
+                  data-dataset="sib"
+                >
+                  SIB-200
+                </button>
+              </div>
+            </div>
+
+            <div class="savings-bars">
+              <div class="saving-row">
+                <div>
+                  <strong>
+                    GPU memory
+                  </strong>
+
+                  <span>
+                    Average reduction
+                  </span>
+                </div>
+
+                <div class="saving-track">
+                  <i data-saving="memory"></i>
+                </div>
+
+                <output data-saving-value="memory">
+                  33.56%
+                </output>
+              </div>
+
+              <div class="saving-row">
+                <div>
+                  <strong>
+                    FLOPs
+                  </strong>
+
+                  <span>
+                    Average reduction
+                  </span>
+                </div>
+
+                <div class="saving-track">
+                  <i data-saving="flops"></i>
+                </div>
+
+                <output data-saving-value="flops">
+                  33.78%
+                </output>
+              </div>
+
+              <div class="saving-row">
+                <div>
+                  <strong>
+                    Clock time
+                  </strong>
+
+                  <span>
+                    Average reduction
+                  </span>
+                </div>
+
+                <div class="saving-track">
+                  <i data-saving="time"></i>
+                </div>
+
+                <output data-saving-value="time">
+                  34.83%
+                </output>
+              </div>
+            </div>
+
+            <p class="source-note">
+              Average percentage reduction across the
+              languages reported in Tables 1 and 2 of
+              the paper.
+            </p>
+          </div>
+
+          <h3>
+            Finding 2: pretraining coverage and
+            linguistic proximity matter
+          </h3>
+
+          <p>
+            CF most consistently matched or outperformed
+            FA for languages represented during
+            AfroXLMR's pretraining. But pretraining was
+            not a binary gate. Several unseen Bantu
+            languages also benefited, suggesting that
+            related representations can make small,
+            targeted updates effective.
+          </p>
+
+          <div
+            class="interactive-card language-card"
+            id="language-explorer"
+          >
+            <div class="interactive-heading">
+              <div>
+                <span class="interactive-kicker">
+                  Explore it: Qualitative patterns
+                </span>
+
+                <h3>
+                  When did continual finetuning work?
+                </h3>
+              </div>
+
+              <label class="select-label">
+                Language
+
+                <select id="language-select">
+                  <option value="yoruba">
+                    Yoruba
+                  </option>
+
+                  <option value="swahili">
+                    Swahili
+                  </option>
+
+                  <option value="xhosa">
+                    Xhosa
+                  </option>
+
+                  <option value="luganda">
+                    Luganda
+                  </option>
+
+                  <option value="tswana">
+                    Tswana
+                  </option>
+
+                  <option value="amharic">
+                    Amharic
+                  </option>
+
+                  <option value="tigrinya">
+                    Tigrinya
+                  </option>
+
+                  <option value="fon">
+                    Fon
+                  </option>
+
+                  <option value="ewe">
+                    Ewe
+                  </option>
+                </select>
+              </label>
+            </div>
+
+            <div class="language-result">
+              <div class="language-status">
+                <span id="language-code">
+                  YOR
+                </span>
+
+                <div>
+                  <h4 id="language-name">
+                    Yoruba
+                  </h4>
+
+                  <p id="language-family">
+                    Niger-Congo, Defoid
+                  </p>
+                </div>
+              </div>
+
+              <div class="language-facts">
+                <div>
+                  <span>
+                    Seen in pretraining
+                  </span>
+
+                  <strong id="language-pretrained">
+                    Yes
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Observed CF pattern
+                  </span>
+
+                  <strong
+                    id="language-outcome"
+                    class="positive"
+                  >
+                    Strong
+                  </strong>
+                </div>
+              </div>
+
+              <p id="language-note">
+                CF consistently benefits Yoruba,
+                combining strong initial representations
+                with informative updates. Random
+                acquisition, however, sharply weakens
+                the result.
+              </p>
+            </div>
+
+            <p class="source-note">
+              This explorer summarizes the paper's
+              cross-language analysis. It does not claim
+              that language family alone determines
+              performance.
+            </p>
+          </div>
+
+          <h3>
+            Finding 3: continual updates depend on
+            principled acquisition
+          </h3>
+
+          <p>
+            When we replaced uncertainty-based
+            selection with random acquisition, CF
+            deteriorated across languages. This matters
+            because CF sees only the latest acquired
+            batch. If that batch is redundant or
+            uninformative, there is no accumulated
+            dataset in the update to compensate.
+          </p>
+
+          <div class="finding-chain">
+            <div>
+              <span>
+                Uncertainty
+              </span>
+
+              <p>
+                scores every sample in the unlabeled
+                pool
+              </p>
+            </div>
+
+            <i aria-hidden="true">
+              &rarr;
+            </i>
+
+            <div>
+              <span>
+                Batch acquisition
+              </span>
+
+              <p>
+                selects the top 100 samples for
+                annotation
+              </p>
+            </div>
+
+            <i aria-hidden="true">
+              &rarr;
+            </i>
+
+            <div>
+              <span>
+                Model update
+              </span>
+
+              <p>
+                uses either all labeled data or only
+                the latest batch
+              </p>
+            </div>
+          </div>
+
+          <div class="caveat-card">
+            <span>
+              What this does not mean
+            </span>
+
+            <h3>
+              Continual finetuning is not a universal
+              replacement for full finetuning.
+            </h3>
+
+            <p>
+              FA can remain preferable when pretraining
+              alignment is weak, learning dynamics are
+              unstable, scripts or structures are
+              poorly represented, or the data
+              distribution is highly imbalanced. The
+              scientific question is not which strategy
+              wins globally. It is
+
+              <strong>
+                what evidence should make the system
+                switch between them?
+              </strong>
+            </p>
+          </div>
+
+          <h2 class="closing-heading">
+            The broader lesson: active learning is a
+            system, not only an acquisition rule.
+          </h2>
+
+          <p class="lead">
+            We began with a label budget. But the full
+            system also contains sample-wise uncertainty
+            estimation, batch acquisition, model
+            updates, compute, pretraining coverage, and
+            the structure of the domain. Optimizing one
+            piece while treating the others as free can
+            move the cost rather than remove it.
+          </p>
+
+          <div class="takeaway-grid">
+            <div>
+              <span>
+                Score
+              </span>
+
+              <p>
+                Estimate uncertainty separately for
+                every sample.
+              </p>
+            </div>
+
+            <div>
+              <span>
+                Acquire
+              </span>
+
+              <p>
+                Form the next batch from the top 100
+                samples.
+              </p>
+            </div>
+
+            <div>
+              <span>
+                Update
+              </span>
+
+              <p>
+                Decide how much previously labeled data
+                the model must revisit.
+              </p>
+            </div>
+
+            <div>
+              <span>
+                Adapt
+              </span>
+
+              <p>
+                Change update strategies when the
+                evidence requires it.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="paper-section"
+          aria-labelledby="paper-title"
+        >
+          <div class="paper-number">
+            Paper behind this essay
+          </div>
+
+          <h2 id="paper-title">
+            Rethinking Full Finetuning from Pretraining
+            Checkpoints in Active Learning for African
+            Languages
+          </h2>
+
+          <p>
+            Bonaventure F. P. Dossou, Inès Arous, and
+            Jackie Chi Kit Cheung. ACL Student Research
+            Workshop, 2025.
+          </p>
+
+          <div class="paper-actions">
+            <a
+              class="primary-link"
+              href="https://aclanthology.org/2025.acl-srw.5/"
+            >
+              Paper
+            </a>
+
+            <a
+              href="https://github.com/bonaventuredossou/active_learning_fa_cf"
+            >
+              Code
+            </a>
+
+            <a
+              href="https://aclanthology.org/2025.acl-srw.5.bib"
+            >
+              BibTeX
+            </a>
+          </div>
+        </section>
+
+        <nav
+          class="next-essay"
+          aria-label="Next essay"
+        >
+          <div>
+            <span>
+              Next in the series
+            </span>
+
+            <small>
+              Active Learning Under Real Constraints,
+              Part II
+            </small>
+          </div>
+
+          <div>
+            <h2>
+              What if labels do not cost the same?
+            </h2>
+
+            <p>
+              From a uniform budget to KnapsackBALD.
+            </p>
+          </div>
+
+          <a
+            class="coming-soon"
+            href="../active-learning-with-non-uniform-costs/index.html"
+          >
+            View next essay
+          </a>
+        </nav>
+      </div>
+    </article>
+  </main>
+
+  <footer class="blog-footer article-footer">
+    <span>
+      &copy; Bonaventure F. P. Dossou
+    </span>
+
+    <div class="footer-links">
+      <a href="../index.html">
+        All essays
+      </a>
+
+      <a
+        href="https://scholar.google.com/citations?user=2J581k0AAAAJ&amp;hl=en"
+      >
+        Google Scholar
+      </a>
+
+      <a
+        href="https://github.com/bonaventuredossou"
+      >
+        GitHub
+      </a>
+
+      <a
+        href="https://www.linkedin.com/in/bonaventuredossou/"
+      >
+        LinkedIn
+      </a>
+
+      <a
+        href="mailto:bonaventure.dossou@mila.quebec"
+      >
+        Email
+      </a>
+    </div>
+  </footer>
+</body>
+</html>
