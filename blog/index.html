@@ -12,10 +12,81 @@
   <link rel="canonical" href="https://bonaventuredossou.github.io/blog/index.html" />
   <link rel="icon" href="../images/bd.ico" />
   <link rel="stylesheet" href="assets/blog.css" />
+
+
+  <style>
+  footer.speech-blog-footer {
+  display: block;
+  margin-top: 48px;
+  padding: 32px 28px;
+  border-top: 1px solid #c7d7cb;
+  background: #edf3ea;
+  color: #153b40;
+}
+
+.speech-footer-inner {
+  max-width: 1184px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px 32px;
+}
+
+.speech-footer-credit {
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.speech-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 18px;
+}
+
+.speech-footer-links a,
+.speech-footer-links a:visited {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #146e65;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-underline-offset: 4px;
+}
+
+.speech-footer-links a:hover {
+  color: #153b40;
+  text-decoration: underline;
+}
+
+.speech-footer-links a:focus-visible {
+  outline: 3px solid #b95631;
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+
+@media (max-width: 620px) {
+  footer.speech-blog-footer {
+    padding: 24px 20px;
+  }
+
+  .speech-footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+</style>
+
+
 </head>
 <body class="blog-home">
   <header class="site-header">
-    <a class="site-brand" href="../index.html" aria-label="Bonaventure F. P. Dossou home">
+    <a class="site-brand" href="../index.html#top" aria-label="Bonaventure F. P. Dossou home">
       <span class="brand-mark">BD</span>
       <span>Bonaventure F. P. Dossou</span>
     </a>
@@ -116,19 +187,43 @@
             </div>
           </div>
         </article>
+        <article class="post-card">
+          <div class="post-card-body">
+            <div class="post-number">05</div>
+            <div class="post-kicker">African-accented speech, MC Dropout, uncertainty-driven acquisition</div>
+            <h3><a href="african-accented-asr/index.html">When Speech Models Learn to Listen</a></h3>
+            <p>Listen to real recordings, follow a signal through an interactive speech-model walkthrough, and compare dropout predictions. Explore how uncertainty guides batch selection and what the published results reveal.</p>
+            <div class="post-footer">
+              <span>Interactive essay · audio examples</span>
+              <a href="african-accented-asr/index.html">Explore the speech lab <span aria-hidden="true">&rarr;</span></a>
+            </div>
+          </div>
+        </article>
       </div>
     </section>
   </main>
 
-  <footer class="blog-footer">
-    <span>&copy; Bonaventure F. P. Dossou</span>
-    <div class="footer-links">
-      <a href="https://scholar.google.com/citations?user=2J581k0AAAAJ&amp;hl=en">Google Scholar</a>
-      <a href="https://www.semanticscholar.org/author/Bonaventure-F.-P.-Dossou/1591111757">Semantic Scholar</a>
+<footer class="speech-blog-footer">
+  <div class="speech-footer-inner">
+    <span class="speech-footer-credit">
+      &copy; Bonaventure F. P. Dossou
+    </span>
+
+    <nav class="speech-footer-links" aria-label="Footer navigation">
+      <a href="../index.html">All essays</a>
+      <a href="../../index.html#top">Main website</a>
+      <a href="../../index.html#publications">Publications</a>
+      <a href="https://scholar.google.com/citations?user=2J581k0AAAAJ&amp;hl=en">
+        Google Scholar
+      </a>
+      <a href="https://www.semanticscholar.org/author/Bonaventure-F.-P.-Dossou/1591111757">
+        Semantic Scholar
+      </a>
       <a href="https://github.com/bonaventuredossou">GitHub</a>
       <a href="https://www.linkedin.com/in/bonaventuredossou/">LinkedIn</a>
       <a href="mailto:bonaventure.dossou@mila.quebec">Email</a>
-    </div>
-  </footer>
+    </nav>
+  </div>
+</footer>
 </body>
 </html>
