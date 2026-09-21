@@ -704,6 +704,7 @@
   }
 }
   </style>
+  <link rel="stylesheet" href="../assets/reading.css">
 </head>
 
 <body class="article-page">
@@ -1115,7 +1116,20 @@
         </section>
 
 
-        <nav class="next-essay" aria-label="Series navigation">
+        <section class="essay-reading" id="reading" aria-labelledby="reading-title">
+  <p class="reading-eyebrow">Reading behind this essay</p>
+  <h2 id="reading-title">Ideas to follow further.</h2>
+  <p class="reading-intro">These sources ground the discussion of compute, annotation costs, evaluation goals, and experimental selection. The clinical, financial, drug-discovery, and public-service scenarios are illustrative applications. The simulator uses invented cases and scores; it does not establish deployment outcomes in those domains.</p>
+  <ol>
+    <li><a href="https://aclanthology.org/2025.acl-srw.5/">Dossou, Arous, and Cheung (2025). Rethinking Full Finetuning from Pretraining Checkpoints in Active Learning for African Languages.</a> The evidence behind changing the model-update strategy when repeated training becomes part of the resource constraint.</li>
+    <li><a href="https://aclanthology.org/2026.findings-eacl.349/">Dossou, Arous, Durand, and Cheung (2026). Active Learning with Non-Uniform Costs for African Natural Language Processing.</a> The cost-aware acquisition study behind treating expert effort and annotation expense as a budget, rather than counting labels alone.</li>
+    <li><a href="https://openreview.net/forum?id=WGF7BPL7WF">Dossou and Cheung (2026). RankBALD: Ranking-Aligned Active Evaluation for Language Models.</a> The evaluation study behind matching acquired evidence to the comparison or ranking the decision actually requires. <a href="https://github.com/bonaventuredossou/al_rankbald">Code and results.</a></li>
+    <li><a href="https://burrsettles.com/pub/settles.activelearning.pdf">Settles (2010 update). Active Learning Literature Survey.</a> A broader introduction to acquisition strategies, query settings, and practical issues when labels require time or expert effort.</li>
+    <li><a href="https://scholars.duke.edu/publication/1460249">Reker and Schneider (2015). Active-learning strategies in computer-assisted drug discovery.</a> A domain-specific review of selecting compounds, observing experimental feedback, and using it to guide the next screening cycle.</li>
+  </ol>
+</section>
+
+<nav class="next-essay" aria-label="Series navigation">
   <div>
     <span>Continue to the next essay</span>
     <small>Active Learning Under Real Constraints, Part V</small>

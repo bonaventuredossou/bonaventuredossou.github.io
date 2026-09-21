@@ -309,6 +309,7 @@
 @media(prefers-reduced-motion:reduce) { .journey-visual * { animation:none!important; } }
 
 </style>
+  <link rel="stylesheet" href="../assets/reading.css">
 </head>
 <body>
   <div id="ui-toast" class="toast" role="status" aria-live="polite"></div>
@@ -537,6 +538,29 @@
         <div class="actions"><a href="https://aclanthology.org/2025.acl-srw.1/">Paper page</a><a href="https://aclanthology.org/2025.acl-srw.1.pdf">Full PDF</a><a href="https://doi.org/10.18653/v1/2025.acl-srw.1">DOI</a><a href="https://aclanthology.org/2025.acl-srw.1.bib">BibTeX</a></div>
         <p>Source guide: methods and Algorithms 1-2, pp. 4-5; model/domain results, Table 3; dropout settings, Table 5; accent counts, Table 7. Real recordings and matching transcripts come from the public AfriSpeech-200 development split. Network masks, alternative predictions, and acquisition pools are teaching examples. No trained weights or real-time ASR are embedded.</p>
       </aside>
+
+<section class="essay-reading" id="reading" aria-labelledby="reading-title">
+  <p class="reading-eyebrow">Reading behind this essay</p>
+  <h2 id="reading-title">Ideas to follow further.</h2>
+  <p class="reading-intro">These sources connect the speech study to its dataset, uncertainty estimates, and model families. The recordings and reference transcripts are real AfriSpeech-200 examples, and the results explorer uses published values. Dropout masks, alternative transcripts, model internals, and acquisition pools are teaching simulations rather than live ASR output.</p>
+  <ol>
+    <li><a href="https://aclanthology.org/2025.acl-srw.1/">Dossou (2025). Advancing African-Accented English Speech Recognition: Epistemic Uncertainty-Driven Data Selection for Generalizable ASR Models.</a> The study behind the essay: uncertainty-driven data selection, transcript comparisons, and reported ASR results. The source guide above identifies the relevant algorithms and tables.</li>
+    <li><a href="https://aclanthology.org/2023.tacl-1.93/">Olatunji et al. (2023). AfriSpeech-200: Pan-African Accented Speech Dataset for Clinical and General Domain ASR.</a> The dataset behind the real recordings and accent context, including its collection process, clinical and general domains, and benchmark design.</li>
+    <li><a href="https://proceedings.mlr.press/v48/gal16.html">Gal and Ghahramani (2016). Dropout as a Bayesian Approximation: Representing Model Uncertainty in Deep Learning.</a> The approximate Bayesian foundation for exploring epistemic uncertainty with stochastic dropout passes; agreement alone does not establish transcription correctness.</li>
+    <li><a href="https://arxiv.org/abs/2006.11477">Baevski, Zhou, Mohamed, and Auli (2020). wav2vec 2.0: A Framework for Self-Supervised Learning of Speech Representations.</a> The self-supervised speech-representation approach behind one of the model families evaluated in the study.</li>
+    <li><a href="https://proceedings.mlr.press/v202/radford23a.html">Radford et al. (2023). Robust Speech Recognition via Large-Scale Weak Supervision.</a> The large-scale weak-supervision approach behind Whisper, another model family in the results explorer.</li>
+  </ol>
+</section>
+
+<!-- Continue to the stopping-decision essay -->
+<nav class="all-essays-card" aria-label="Next essay">
+  <div class="all-essays-copy">
+    <span class="all-essays-label">Continue to the next essay</span>
+    <h2>When Should a Model Stop Asking for More Data?</h2>
+    <p>Another batch can help. But when is more learning worth its cost? Make a stopping decision, then explore the evidence behind it.</p>
+  </div>
+  <a class="all-essays-button" href="../when-to-stop-active-learning/index.html">Explore the stopping lab <span aria-hidden="true">&rarr;</span></a>
+</nav>
 
 <!-- Return to the blog -->
 <nav class="all-essays-card" aria-label="Back to all essays">

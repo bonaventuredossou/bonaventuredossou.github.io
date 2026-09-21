@@ -1,0 +1,38 @@
+/* Annotated reading sections. Scoped to preserve each essay's existing layout. */
+.essay-reading, .article-body > section.essay-reading {
+  max-width: 760px;
+  margin: 64px auto;
+  padding: 38px 0 0;
+  border-top: 1px solid #d7e2d6;
+  color: #153b40;
+  scroll-margin-top: 130px;
+}
+.essay-reading .reading-eyebrow {
+  margin: 0 0 18px;
+  color: #146e65;
+  font: 700 .72rem/1.5 var(--sans, system-ui, sans-serif);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.essay-reading h2 {
+  margin: 0 0 24px;
+  font-family: var(--serif, Georgia, serif);
+  font-size: clamp(2rem, 4vw, 2.4rem);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -.035em;
+}
+.essay-reading .reading-intro, .essay-reading li {
+  font-size: .9rem;
+  line-height: 1.8;
+}
+.essay-reading .reading-intro { margin: 0 0 24px; font-family: inherit; }
+.essay-reading ol { margin: 0; padding-left: 23px; }
+.essay-reading li { margin: 0 0 19px; padding-left: 7px; }
+.essay-reading li:last-child { margin-bottom: 0; }
+.essay-reading a { color: #146e65; text-underline-offset: 4px; overflow-wrap: anywhere; }
+.essay-reading a:focus-visible { outline: 3px solid #b95631; outline-offset: 4px; }
+@media (max-width: 650px) {
+  .essay-reading, .article-body > section.essay-reading { margin-block: 48px; padding-top: 30px; }
+  .essay-reading .reading-intro, .essay-reading li { font-size: .88rem; }
+}

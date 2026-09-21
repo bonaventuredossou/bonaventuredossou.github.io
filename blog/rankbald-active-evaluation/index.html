@@ -1688,6 +1688,7 @@
   }
 }
   </style>
+  <link rel="stylesheet" href="../assets/reading.css">
 </head>
 
 <body class="article-page">
@@ -2647,7 +2648,19 @@
           </div>
         </section>
 
-        <nav class="next-essay" aria-label="Series navigation">
+        <section class="essay-reading" id="reading" aria-labelledby="reading-title">
+  <p class="reading-eyebrow">Reading behind this essay</p>
+  <h2 id="reading-title">Ideas to follow further.</h2>
+  <p class="reading-intro">These sources trace the path from measuring model ability to acquiring evidence for a reliable ordering. The miniature benchmarks, posterior visualizations, and calibration exercises are teaching constructions; the reported study results are separate from those examples.</p>
+  <ol>
+    <li><a href="https://openreview.net/forum?id=WGF7BPL7WF">Dossou and Cheung (2026). RankBALD: Ranking-Aligned Active Evaluation for Language Models.</a> The study behind the essay: direct acquisition toward uncertainty in pairwise model orderings. The accompanying code documents the experiments and reported results. <a href="https://github.com/bonaventuredossou/al_rankbald">Code and results.</a></li>
+    <li><a href="https://arxiv.org/abs/2509.11106">Hofmann et al. (2025). Fluid Language Model Benchmarking.</a> The adaptive evaluation baseline: estimate item properties and select questions suited to a model&#x27;s ability.</li>
+    <li><a href="https://aclanthology.org/D16-1062/">Lalor, Wu, and Yu (2016). Building an Evaluation Scale using Item Response Theory.</a> Background on using item response theory to build an NLP evaluation scale that accounts for differences in item difficulty.</li>
+    <li><a href="https://arxiv.org/abs/1112.5745">Houlsby, Huszár, Ghahramani, and Lengyel (2011). Bayesian Active Learning for Classification and Preference Learning.</a> The information-gain principle adapted here from learning model parameters to resolving evaluation uncertainty.</li>
+  </ol>
+</section>
+
+<nav class="next-essay" aria-label="Series navigation">
   <div>
     <span>Continue to the next essay</span>
     <small>Active Learning Under Real Constraints, Part IV</small>

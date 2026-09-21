@@ -932,6 +932,7 @@
   }
 }
   </style>
+  <link rel="stylesheet" href="../assets/reading.css">
 </head>
 <body class="article-page">
   <div class="reading-progress" aria-hidden="true">
@@ -1854,7 +1855,19 @@ Publications
 </a>
 </div>
         </section>
-        <nav class="next-essay" aria-label="Next essay">
+        <section class="essay-reading" id="reading" aria-labelledby="reading-title">
+  <p class="reading-eyebrow">Reading behind this essay</p>
+  <h2 id="reading-title">Ideas to follow further.</h2>
+  <p class="reading-intro">These sources explain the acquisition objective, the annotation-budget constraint, and the evaluation data. The results explorer presents reported findings; the interactive pools and budgets are teaching examples. The study itself uses simulated annotation costs.</p>
+  <ol>
+    <li><a href="https://aclanthology.org/2026.findings-eacl.349/">Dossou, Arous, Durand, and Cheung (2026). Active Learning with Non-Uniform Costs for African Natural Language Processing.</a> The study behind KnapsackBALD: combine informative batch acquisition with a budget constraint, and evaluate controlled forms of cost heterogeneity.</li>
+    <li><a href="https://arxiv.org/abs/1906.08158">Kirsch, van Amersfoort, and Gal (2019). BatchBALD: Efficient and Diverse Batch Acquisition for Deep Bayesian Active Learning.</a> Why a batch should account for information shared between examples instead of selecting only the highest individual scores.</li>
+    <li><a href="https://arxiv.org/abs/1112.5745">Houlsby, Huszár, Ghahramani, and Lengyel (2011). Bayesian Active Learning for Classification and Preference Learning.</a> The Bayesian information-gain foundation from which BALD and its batch extensions develop.</li>
+    <li><a href="https://aclanthology.org/2023.ijcnlp-main.10/">Adelani et al. (2023). MasakhaNEWS: News Topic Classification for African languages.</a> The African-language news benchmark underlying the experiments; its original scope is broader than the language subset used in the cost study.</li>
+  </ol>
+</section>
+
+<nav class="next-essay" aria-label="Next essay">
         <div>
 <span>
 Next in the series

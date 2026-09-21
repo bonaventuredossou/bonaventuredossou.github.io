@@ -154,6 +154,7 @@
   }
 }
 </style>
+  <link rel="stylesheet" href="../assets/reading.css">
 </head>
 
 <body class="article-page">
@@ -1764,7 +1765,19 @@
           </div>
         </section>
 
-        <nav
+        <section class="essay-reading" id="reading" aria-labelledby="reading-title">
+  <p class="reading-eyebrow">Reading behind this essay</p>
+  <h2 id="reading-title">Ideas to follow further.</h2>
+  <p class="reading-intro">These sources connect the compute question to uncertainty-based acquisition and African-language evaluation. The reported findings come from the study below; the interactive walkthroughs and simplified cost examples explain the ideas without rerunning its training experiments.</p>
+  <ol>
+    <li><a href="https://aclanthology.org/2025.acl-srw.5/">Dossou, Arous, and Cheung (2025). Rethinking Full Finetuning from Pretraining Checkpoints in Active Learning for African Languages.</a> The study behind the essay: full versus continual finetuning, acquisition choices, and the influence of pretraining coverage on performance and compute.</li>
+    <li><a href="https://proceedings.mlr.press/v48/gal16.html">Gal and Ghahramani (2016). Dropout as a Bayesian Approximation: Representing Model Uncertainty in Deep Learning.</a> The approximate Bayesian interpretation behind using repeated dropout predictions to explore model uncertainty.</li>
+    <li><a href="https://arxiv.org/abs/1112.5745">Houlsby, Huszár, Ghahramani, and Lengyel (2011). Bayesian Active Learning for Classification and Preference Learning.</a> The information-gain objective behind BALD: seek labels that reduce uncertainty about the model, beyond predictive entropy alone.</li>
+    <li><a href="https://aclanthology.org/2023.ijcnlp-main.10/">Adelani et al. (2023). MasakhaNEWS: News Topic Classification for African languages.</a> The news-classification benchmark used in part of the evaluation, with context on language coverage and dataset construction.</li>
+  </ol>
+</section>
+
+<nav
           class="next-essay"
           aria-label="Next essay"
         >
