@@ -1,0 +1,61 @@
+id,text,label,split
+B01,My card was charged twice for the monthly subscription.,billing,train
+B02,Please send an invoice for my payment.,billing,train
+B03,I cancelled the plan but another charge appeared.,billing,train
+B04,The refund has not reached my bank account.,billing,train
+B05,Can I pay the annual invoice by bank transfer?,billing,train
+B06,I need to change the card used for renewal.,billing,train
+B07,The invoice has the wrong company address.,billing,train
+B08,Why did the subscription price increase this month?,billing,train
+B09,The payment failed even though my card is valid.,billing,train
+B10,Please remove the tax from our invoice.,billing,train
+B11,The discount was missing from my renewal payment.,billing,train
+B12,I upgraded my plan and received two invoices.,billing,train
+B13,I cannot download the receipt for last month.,billing,train
+B14,My account is closed but you still billed me.,billing,train
+B15,Please refund the duplicate subscription payment.,billing,validation
+B16,Our invoice needs a different billing address.,billing,validation
+B17,I cannot find the receipt for the annual plan.,billing,validation
+B18,The card payment went through twice yesterday.,billing,test
+B19,How do I update the tax details on an invoice?,billing,test
+B20,I was billed after cancelling the subscription.,billing,test
+A01,I forgot my password and cannot sign in.,access,train
+A02,The password reset email never arrived.,access,train
+A03,My account is locked after several login attempts.,access,train
+A04,The verification code expired before I could enter it.,access,train
+A05,I lost my phone and cannot complete two factor authentication.,access,train
+A06,Please invite my colleague to the team account.,access,train
+A07,My sign in link says it is no longer valid.,access,train
+A08,I need admin permission to open the workspace.,access,train
+A09,Can I change the email address used to log in?,access,train
+A10,The login page does not accept my password.,access,train
+A11,I cannot access the account after changing jobs.,access,train
+A12,The invitation email sends me to an expired link.,access,train
+A13,My session ends as soon as I sign in.,access,train
+A14,I paid for the plan but my account has no workspace permission.,access,train
+A15,I cannot log in because the reset link expired.,access,validation
+A16,Please unlock my account after failed password attempts.,access,validation
+A17,My colleague never received the workspace invitation.,access,validation
+A18,The authentication code does not let me sign in.,access,test
+A19,I need a password reset for my locked account.,access,test
+A20,How can I give a colleague permission to join?,access,test
+T01,The app crashes when I upload a large file.,technical,train
+T02,The dashboard is blank after the latest update.,technical,train
+T03,Exporting the report creates an empty file.,technical,train
+T04,The page loads slowly in my browser.,technical,train
+T05,Our integration returns a server error.,technical,train
+T06,The uploaded image is missing from the dashboard.,technical,train
+T07,The app freezes when I search the archive.,technical,train
+T08,The report download button does nothing.,technical,train
+T09,Notifications appear twice after the software update.,technical,train
+T10,The mobile layout hides the save button.,technical,train
+T11,The invoice export crashes the application.,technical,train
+T12,I can sign in but the search feature returns an error.,technical,train
+T13,Changes disappear when I refresh the page.,technical,train
+T14,The file upload stays at zero percent.,technical,train
+T15,My browser freezes when I upload an image.,technical,validation
+T16,The dashboard report is empty after refresh.,technical,validation
+T17,The search button produces a server error.,technical,validation
+T18,The application closes whenever I export a file.,technical,test
+T19,The latest update broke the dashboard layout.,technical,test
+T20,Uploading a report makes the page freeze.,technical,test
