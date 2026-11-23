@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Which Questions Belong in the Same Batch? | Bonaventure F. P. Dossou</title>
+  <meta name="description" content="An interactive essay on BatchRankBALD, redundant benchmark items, and reliable model ranking under tight evaluation budgets.">
+  <meta property="og:title" content="Which Questions Belong in the Same Batch?">
+  <meta property="og:description" content="Derive conditional ranking information, reproduce a 2PL counterexample, and explore the BatchRankBALD benchmark results.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://bonaventuredossou.github.io/blog/batchrankbald-active-evaluation/index.html">
+  <link rel="canonical" href="https://bonaventuredossou.github.io/blog/batchrankbald-active-evaluation/index.html">
+  <link rel="icon" href="../../images/bd.ico">
+  <link rel="stylesheet" href="../assets/blog.css">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script defer src="lab.js"></script>
+</head>
+<body class="batch-page">
+  <a class="skip-link" href="#main">Skip to the essay</a>
+  <header class="site-header">
+    <a class="site-brand" href="../../index.html#top"><span class="brand-mark">BD</span><span>Bonaventure F. P. Dossou</span></a>
+    <nav aria-label="Primary navigation">
+      <a href="../../index.html#research">Research</a>
+      <a href="../../index.html#publications">Publications</a>
+      <a class="active" href="../index.html">Blog</a>
+    </nav>
+  </header>
+  <main id="main">
+    <article>
+      <header class="batch-hero">
+        <div class="batch-wrap">
+          <a href="../index.html">← Research Notes</a>
+          <p class="batch-label">Batch active evaluation</p>
+          <h1>Which questions belong in the <em>same batch?</em></h1>
+          <p class="batch-deck">Adaptive evaluation is an experimental design problem. When the decision is which model to release, the evidence that matters is whatever can change the ordering. What happens when you have to choose all your tests before seeing any answers?</p>
+          <p>By <strong>Bonaventure F. P. Dossou</strong> · TMLR · November 2026</p>
+          <div class="batch-actions">
+            <a href="#batch-lab">Experiment with the information gain ↓</a>
+            <a href="https://openreview.net/forum?id=LXUlJxTice">Read the paper ↗</a>
+          </div>
+        </div>
+      </header>
+
+      <div class="batch-wrap batch-body">
+        <section aria-labelledby="setup">
+          <h2 id="setup">Design the experiment around the decision</h2>
+          <p>Imagine I have to decide which checkpoint to release. I care about whether A outranks B, especially if the evidence so far puts them close together. An item that precisely locates a distant checkpoint on the ability scale may do little to inform that choice. In our <a href="../rankbald-active-evaluation/index.html">RankBALD work</a>, Jackie Cheung and I built the acquisition rule around those pairwise comparisons.</p>
+          <p>The batch setting changes when evidence arrives. Suppose I can launch ten benchmark items in parallel, with every item run on all candidate models. Sequential RankBALD would wait for answers after each item. Taking its ten highest scores up front uses the same initial belief every time. BatchRankBALD also commits up front, but asks what each item will teach us after accounting for the possible answers to the items already queued.</p>
+          <p>There are two kinds of interaction to look for. Several items can repeat evidence about a close pair, making each successive item less valuable. Or an answer can tell us <em>when</em> a second answer matters, making the second item more valuable. Both effects matter even if responses are independent once the underlying abilities are known.</p>
+        </section>
+
+        <figure class="overlap-figure">
+          <img src="figure-1.png" width="1700" height="860"
+            alt="Three information diagrams. RankBALD selects one item about the A–B ordering. Top-n RankBALD selects two items about A–B, with their shared coverage shaded red. BatchRankBALD selects one item about A–B and one about C–D. E–F remains uncovered in every panel.">
+          <figcaption><strong>Figure 1 from the paper.</strong> The red overlap in the middle panel shows the evidence top‑n counts twice when it scores both questions individually. The right panel spends the same two slots on different comparisons. <a href="https://openreview.net/forum?id=LXUlJxTice">Read the paper</a></figcaption>
+        </figure>
+
+        <section class="batch-lab" id="build-a-batch" aria-labelledby="builder-title">
+          <h2 id="builder-title">Build your own evaluation batch</h2>
+          <p>Pick questions to help settle five model comparisons. Watch how much each question adds as the batch fills. Here, questions about the same pair provide overlapping evidence.</p>
+          <p>Each question covers a fraction of one comparison. The next question covers that fraction of what remains. For example, two items covering 90% and 80% of the same comparison cover 98% together. This is a schematic model of overlap. The <a href="#batch-lab">2PL lab</a> below computes mutual information from response probabilities.</p>
+          <label for="builder-budget">Questions per batch</label>
+          <select id="builder-budget">
+            <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+            <option>7</option><option>8</option><option>9</option><option selected>10</option>
+          </select>
+          <div class="batch-controls">
+            <button type="button" id="builder-top">Pick highest individual scores</button>
+            <button type="button" id="builder-greedy">Pick highest added evidence</button>
+            <button type="button" id="builder-clear">Clear batch</button>
+          </div>
+          <p>Numbers on each unselected question show its individual coverage and what it would add to your current batch, in percentage points.</p>
+          <div class="builder-items" id="builder-items" role="group" aria-label="Benchmark questions"></div>
+          <p id="builder-status" aria-live="polite"></p>
+          <div class="batch-chart" id="builder-chart" aria-label="Covered evidence by model comparison"></div>
+          <noscript><p>Enable JavaScript to build a batch and compare selection strategies.</p></noscript>
+        </section>
+
+        <section aria-labelledby="method">
+          <h2 id="method">From an ability posterior to a batch objective</h2>
+          <p>Under two-parameter logistic item response theory (2PL IRT), a model with ability \(\theta_k\) answers item \(j\) correctly with probability \(\sigma(a_j(\theta_k-b_j))\). The item parameters are \(a_j\), its discrimination, and \(b_j\), its difficulty. We hold them fixed while constructing a batch and use a Laplace approximation for each model’s current ability posterior.</p>
+          <p>Write \(D_t\) for the evaluation evidence already observed, \(Z_{ab}=\mathbf 1[\theta_a&gt;\theta_b]\) for the ordering of models \(a,b\), and \(Y_{ab,j}=(U_{aj},U_{bj})\) for their two binary responses to item \(j\). The ideal design would choose the \(n\) items giving the most information about the entire ordering vector \(Z\).</p>
+          <div class="batch-equation">\[
+          S^\star=\arg\max_{|S|=n} I(Z;Y_S\mid D_t).
+          \]</div>
+          <p>The ordering bits are coupled by transitivity. If A outranks B and B outranks C, A outranks C too. Computing joint information and searching across size-\(n\) subsets are both expensive. The paper uses a weighted pairwise surrogate over the retained comparisons \(\mathcal P_t^\star\).</p>
+          <div class="batch-equation">\[
+          J_{\mathrm{pair}}(S)=\sum_{(a,b)\in\mathcal P_t^\star}\omega_{ab}\,I(Z_{ab};Y_{ab,S}\mid D_t).
+          \]</div>
+          <p>For each pair the chain rule gives the exact marginal of its term. In entropy form, it is the expected reduction in uncertainty about the ordering once we account for the answers from \(S\).</p>
+          <div class="batch-equation">\[
+          \Delta_{ab}(j\mid S)=I(Z_{ab};Y_{ab,j}\mid Y_{ab,S},D_t)
+          =H(Z_{ab}\mid Y_{ab,S},D_t)-H(Z_{ab}\mid Y_{ab,S},Y_{ab,j},D_t).
+          \]</div>
+          <p>The implemented greedy score also uses \(v_{ab,j}=\omega_{ab}\bar\pi_{ja}^{\,t}\bar\pi_{jb}^{\,t}\), where \(\bar\pi_{jk}^{\,t}\) is the posterior average of a Gaussian kernel measuring how close \(b_j\) is to \(\theta_k\). The kernel bandwidth is the median posterior ability standard deviation across models.</p>
+          <div class="batch-equation">\[
+          \bar\pi_{jk}^{\,t}=\mathbb E_{\theta_k\mid D_t}
+              \exp\!\left[-\frac{(b_j-\theta_k)^2}{2\sigma_{\pi,t}^2}\right],
+          \qquad
+          \operatorname{Score}(j\mid S)=
+          \frac{\sum_{(a,b)\in\mathcal P_t^\star} v_{ab,j}\,\Delta_{ab}(j\mid S)}
+               {\epsilon+\sum_{(a,b)\in\mathcal P_t^\star}v_{ab,j}}.
+          \]</div>
+          <p>The numerator and normalization change with the candidate, so the implemented score is a heuristic built from the pairwise marginals. With \(S=\varnothing\) the conditioning disappears. A batch of one with all pairs retained recovers sequential RankBALD.</p>
+        </section>
+
+        <section aria-labelledby="interaction">
+          <h2 id="interaction">When does an item become more useful?</h2>
+          <p>Fix one pair and omit \(D_t\) for readability. Expanding \(I(Z;Y_i,Y_j)\) both ways gives the co-information identity in Appendix B.</p>
+          <div class="batch-equation">\[
+          I(Z;Y_j)-I(Z;Y_j\mid Y_i)
+          =I(Y_i;Y_j)-I(Y_i;Y_j\mid Z).
+          \]</div>
+          <p>Positive co-information gives redundancy. Negative co-information gives synergy. Conditional independence given \((\theta_a,\theta_b)\) does not force conditional independence given their ordering: knowing \(\theta_a&gt;\theta_b\) still leaves uncertainty about both abilities. This is where the usual diminishing-returns argument for BatchBALD breaks. The paper gives a conditional guarantee for its pairwise surrogate using a submodularity ratio and the spread of the relevance weights. The standard \(1-1/e\) factor requires stronger assumptions.</p>
+        </section>
+
+        <section id="batch-lab" class="batch-lab" aria-labelledby="lab-title">
+          <h2 id="lab-title">Reproduce the 2PL counterexample</h2>
+          <p>Take independent abilities \(\theta_a\in\{0,2\}\) and \(\theta_b\in\{-1,1\}\), each uniform. Item \(i\) has difficulty \(-0.5\), item \(j\) starts at \(1.5\), and both share discrimination \(\lambda\). The lab enumerates all four ability states and all 16 joint response histories to compute the information exactly for this discrete posterior.</p>
+          <div class="batch-slider-grid">
+            <label for="discrimination">Shared discrimination <output id="discrimination-value">10</output><input id="discrimination" type="range" min=".5" max="20" step=".5" value="10"></label>
+            <label for="difficulty">Item j difficulty <output id="difficulty-value">1.5</output><input id="difficulty" type="range" min="-1.5" max="2.5" step=".1" value="1.5"></label>
+          </div>
+          <div class="batch-controls">
+            <button type="button" data-difficulty="1.5">Appendix C example</button>
+            <button type="button" data-difficulty="-0.5">Repeat the first difficulty</button>
+          </div>
+          <div class="batch-chart" id="information-chart" aria-label="Ordering information in bits on a fixed zero to one scale"></div>
+          <p id="batch-feedback" aria-live="polite">At the Appendix C setting, information rises from 0.309553 to 0.475976 bits after conditioning.</p>
+          <label for="history">Inspect a possible response to item i</label>
+          <select id="history">
+            <option value="0">Both incorrect</option><option value="1">A incorrect, B correct</option>
+            <option value="2">A correct, B incorrect</option><option value="3" selected>Both correct</option>
+          </select>
+          <div class="batch-chart" id="posterior-chart" aria-label="Ordering probability before and after the selected response"></div>
+          <p id="history-feedback" aria-live="polite"></p>
+          <p>In the steep-item limit at the Appendix C setting, let \(X=\mathbf 1[\theta_a=2]\) and \(W=\mathbf 1[\theta_b=1]\). Then \(Z=X\lor\neg W\). The easy item reveals \(W\); the hard item reveals \(X\). When \(W=0\), the ordering is settled. When \(W=1\), the hard item settles it. Averaging the two histories gives \(I(Z;Y_j\mid Y_i)=\tfrac12\) bit, compared with \(I(Z;Y_j)=h_2(1/4)-\tfrac12\approx0.3113\) bits.</p>
+        </section>
+
+        <section aria-labelledby="fantasies">
+          <h2 id="fantasies">Compute the gain before the answers arrive</h2>
+          <p>For a single pair, each chosen item has four possible response outcomes, so exact averaging requires \(4^{|S|}\) histories. The paper uses two independent banks of posterior samples. An outer bank generates \(R\) plausible histories. Within a history, the same sampled abilities generate responses as new items are appended, preserving their dependence across items. An inner bank of \(L\) ability draws is reweighted by the probability of that history.</p>
+          <div class="batch-equation">\[
+          \log w_{s,r}(S\cup\{j^\star\})
+          =\log w_{s,r}(S)+\log p(y^{(r)}_{j^\star}\mid\theta^{(s)}).
+          \]</div>
+          <p>Normalize the weights within each history. For a candidate item \(j\), the resulting posterior predictive table has eight cells: two orderings times four response outcomes. Each cell is a weighted sum over the inner draws, with \(p_j(y\mid\theta^{(s)})\) the product of the two Bernoulli likelihoods.</p>
+          <div class="batch-equation">\[
+          \widehat p_r(z,y)=\sum_{s=1}^L \bar w_{s,r}\,
+              \mathbf 1[Z^{(s)}=z]\,p_j(y\mid\theta^{(s)}),
+          \qquad
+          \widehat\Delta_{ab}(j\mid S)=\frac1R\sum_{r=1}^R
+              \sum_{z,y}\widehat p_r(z,y)
+              \log_2\frac{\widehat p_r(z,y)}{\widehat p_r(z)\widehat p_r(y)}.
+          \]</div>
+          <p>This is an average of information scores computed <em>within</em> histories. Averaging the tables first would mix away the conditioning. Only the simulated histories change while selecting the batch. We update the actual evaluation posterior once the batch runs. Precomputing response probabilities and extending the log weights recursively yields \(O(n\,|Q|\,|\mathcal P_t^\star|\,R\,L)\) candidate-scoring work for a batch of \(n\) items, without enumerating histories.</p>
+          <p>How much does sampling change the choice? In the paper’s small reference experiment, we enumerated histories through depth four and used quadrature for the continuous ability integrals. With 64 outer and 64 inner draws, the candidate-score rankings had a mean Spearman correlation of 0.908 with the reference, but the top candidate agreed only 67.5% of the time. This matters when scores are close. An estimator can preserve most of the ranking while changing the next greedy choice.</p>
+        </section>
+
+        <section aria-labelledby="results">
+          <h2 id="results">What happened with ten questions?</h2>
+          <p>We tested the methods on 2,802 checkpoint–benchmark combinations across six model families and six Open LLM Leaderboard benchmarks. With ten items per benchmark, BatchRankBALD reached a rank distance of <strong>30.4</strong>, compared with <strong>35.3</strong> for sequential RankBALD and <strong>84.4</strong> for selecting the ten highest individual scores.</p>
+          <figure class="batch-results">
+            <figcaption><strong>Compare methods across evaluation budgets</strong> · Table 1</figcaption>
+            <div class="batch-slider-grid">
+              <label for="metric">Metric<select id="metric">
+                <option value="distance">Cross-benchmark rank distance</option>
+                <option value="variation">Trajectory total variation</option>
+                <option value="correlation">Training-order rank correlation</option>
+              </select></label>
+              <label for="budget">Items per benchmark<select id="budget">
+                <option value="0">10</option><option value="1">50</option><option value="2">100</option><option value="3">500</option>
+              </select></label>
+            </div>
+            <div class="batch-chart" id="results-chart"></div>
+            <p id="metric-note" aria-live="polite"></p>
+          </figure>
+          <div class="batch-table">
+            <table>
+              <caption>Cross-benchmark rank distance to the full-evaluation ranking on a second capability-matched benchmark. Lower is better. Data from Table 1.</caption>
+              <thead><tr><th scope="col">Method</th><th scope="col">10 items</th><th scope="col">50</th><th scope="col">100</th><th scope="col">500</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Random batch</th><td>66.2</td><td>45.8</td><td>42.1</td><td>36.6</td></tr>
+                <tr><th scope="row">Top‑n RankBALD</th><td>84.4</td><td>39.3</td><td>36.5</td><td>35.5</td></tr>
+                <tr><th scope="row">Sequential RankBALD</th><td>35.3</td><td>29.1</td><td>24.2</td><td>22.5</td></tr>
+                <tr><th scope="row">BatchRankBALD</th><td>30.4</td><td>27.1</td><td>21.1</td><td>18.9</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>At each budget in the main experiment, BatchRankBALD also had lower trajectory total variation and higher training-order rank correlation than the three baselines. The sequential comparison is against a specific one-step greedy rule that updates after every item. At ten items, random batching also beats top‑n on rank distance (66.2 versus 84.4). That result is consistent with top‑n concentrating on overlapping evidence, though the aggregate scores alone cannot identify which items were redundant.</p>
+        </section>
+
+        <section aria-labelledby="tradeoff">
+          <h2 id="tradeoff">A smoother trajectory can come with a worse ranking</h2>
+          <p>In the ablation we fixed the total budget at 500 items and varied the number committed per batch. Relative to batch size 10, rank distance worsened significantly starting at 50, while trajectory total variation improved at every tested size from 20 upward and reached its minimum at 100. Larger batches mean fewer opportunities to redirect the experiment after seeing data. They can also make projected checkpoint trajectories smoother. Those metrics reward different outcomes.</p>
+          <p>Restricting attention to 20–50% of model pairs produced no statistically detectable change on the ablation metrics. Retaining 10% also preserved rank distance and total variation within the resolution of the experiment, but lowered rank correlation by 0.017 on average. In the AfroBench case study, the three methods tied on rank distance from 50 items onward. Only one of three model-family groups had enough models to form pairs, so that study says little about how much batch selection can gain from interactions across many comparisons.</p>
+        </section>
+
+        <section aria-labelledby="takeaway">
+          <h2 id="takeaway">What would the next question still teach us?</h2>
+          <p>When the evaluation budget is tight, I want each slot to help resolve a comparison that the rest of the batch leaves uncertain. That is the question I would ask when choosing which benchmark items to run together. If the decision is whether a model meets a specific capability or language-coverage requirement, I would evaluate that requirement directly.</p>
+          <div class="batch-actions">
+            <a href="https://openreview.net/forum?id=LXUlJxTice">Batch Active Evaluation for Reliable Model Ranking ↗</a>
+            <a href="../rankbald-active-evaluation/index.html">Explore the original RankBALD essay →</a>
+          </div>
+        </section>
+        <nav class="batch-lab batch-end-nav" aria-labelledby="batch-end-title">
+          <h2 id="batch-end-title">Continue exploring</h2>
+          <div class="batch-actions">
+            <a href="../reliable-african-language-ai/index.html">← Previous essay: When Does Language Coverage Become Reliable Support?</a>
+            <a href="../index.html">Back to all essays ↗</a>
+          </div>
+        </nav>
+      </div>
+    </article>
+  </main>
+</body>
+</html>

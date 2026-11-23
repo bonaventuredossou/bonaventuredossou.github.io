@@ -1,0 +1,130 @@
+.batch-page {
+  margin: 0;
+  color: #172b29;
+  background: #f8f6ef;
+}
+
+.batch-wrap {
+  width: min(100% - 2.5rem, 49rem);
+  margin-inline: auto;
+}
+
+.batch-hero {
+  padding: clamp(3rem, 8vw, 7rem) 0;
+  background: #123b38;
+  color: #fff9e9;
+}
+
+.batch-hero a { color: inherit; }
+.batch-label { margin-top: 2rem; color: #bde3d2; }
+
+.batch-hero h1 {
+  margin: .45rem 0 1rem;
+  font-size: clamp(2.8rem, 7.5vw, 6rem);
+  line-height: 1;
+  letter-spacing: -.055em;
+}
+
+.batch-hero h1 em { color: #bde3d2; }
+.batch-deck { max-width: 36rem; font-size: clamp(1.15rem, 3vw, 1.6rem); }
+.batch-body { padding-block: 3rem 5rem; font-size: 1.075rem; line-height: 1.7; }
+.batch-body section + section { margin-top: 3.5rem; }
+.batch-body h2 { margin: 0 0 .9rem; font-size: clamp(1.65rem, 4vw, 2.6rem); line-height: 1.15; }
+.batch-body a { color: #175d54; text-decoration: underline; }
+.batch-body li + li { margin-top: .65rem; }
+
+.batch-actions, .batch-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem 1.3rem;
+  margin-top: 1.3rem;
+}
+
+.batch-actions a { text-decoration: underline; }
+
+.batch-lab {
+  padding: clamp(1rem, 4vw, 2rem);
+  background: #e6eee6;
+  border: 1px solid #99b4a6;
+  border-radius: 1rem;
+}
+
+.batch-lab button {
+  cursor: pointer;
+  font: inherit;
+  color: #173c37;
+  background: #fffdf6;
+  border: 1px solid #52796e;
+  border-radius: .55rem;
+  padding: .55rem .8rem;
+}
+
+.batch-lab button:focus-visible { outline: 3px solid #9a461f; outline-offset: 2px; }
+
+.batch-table { overflow-x: auto; }
+.batch-table table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.batch-table caption { text-align: left; font-size: .9rem; }
+.batch-table th, .batch-table td { padding: .45rem; border-bottom: 1px solid #b8c8bd; }
+.batch-table th { text-align: left; }
+.batch-table td { text-align: right; }
+.batch-table thead th:not(:first-child) { text-align: right; }
+.batch-table tbody tr:last-child { background: #e6eee6; font-weight: 700; }
+
+.batch-equation {
+  overflow-x: auto;
+  background: #efeee4;
+  border-inline-start: 3px solid #648b7d;
+  padding-inline: .9rem;
+  margin-block: 1.25rem;
+}
+
+.batch-slider-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 1rem;
+  margin-block: 1.25rem;
+}
+
+.batch-slider-grid label { font-weight: 700; }
+.batch-slider-grid input, .batch-slider-grid select { display: block; width: 100%; margin-top: .35rem; }
+.batch-slider-grid output { float: right; }
+.batch-page select { color: inherit; background: #fffdf6; padding: .35rem; max-width: 100%; }
+.batch-lab #history { display: block; margin-block: .35rem 1rem; }
+
+.batch-chart { display: grid; gap: .65rem; margin-block: 1.25rem; }
+.batch-bar-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 1fr) minmax(4rem, 2fr) 5.2rem;
+  align-items: center;
+  gap: .65rem;
+  line-height: 1.25;
+}
+.batch-bar-row strong { text-align: right; font-variant-numeric: tabular-nums; }
+.batch-bar-track { display: block; background: #d9e1d7; height: .85rem; border-radius: .2rem; }
+.batch-bar { display: block; height: 100%; background: #567988; border-radius: inherit; }
+.batch-bar-highlight { background: #176252; }
+.batch-results { margin: 1.7rem 0; padding: clamp(1rem, 4vw, 1.75rem); background: #eeefe6; border-radius: 1rem; }
+
+@media (max-width: 440px) {
+  .batch-bar-row { grid-template-columns: 1fr auto; gap: .3rem .7rem; }
+  .batch-bar-track { grid-column: 1 / -1; grid-row: 2; }
+}
+
+.overlap-figure { margin: 2.5rem 0 3.5rem; }
+.overlap-figure img { display: block; width: 100%; height: auto; }
+.overlap-figure figcaption { margin-top: .75rem; font-size: .92rem; color: #3f574d; }
+
+#build-a-batch { margin-bottom: 3.5rem; }
+#builder-budget { margin-inline-start: .5rem; }
+
+.builder-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: .55rem;
+}
+
+.builder-items button { line-height: 1.35; text-align: left; }
+.builder-items button span { display: block; font-size: .82rem; margin-top: .18rem; }
+.builder-items button[aria-pressed="true"] { background: #20534a; color: white; }
+#builder-status { font-weight: 700; }
+.batch-end-nav { margin-top: 3.5rem; }
